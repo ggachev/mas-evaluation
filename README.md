@@ -1,6 +1,6 @@
 # Metrics Evaluation Framework for Autonomous Coding Agents
 
-A comprehensive evaluation framework for measuring the performance of autonomous coding agents (OpenHands, SWE-Agent, Live-SWE-Agent, MetaGPT). This system evaluates agent trajectories using both **deterministic metrics** and **LLM-as-a-Judge** probabilistic metrics.
+A comprehensive evaluation framework for measuring the performance of autonomous coding agents ([Openhands](https://github.com/OpenHands/OpenHands), [SWE-Agent](https://github.com/SWE-agent/SWE-agent), [Live-SWE-Agent](https://github.com/OpenAutoCoder/live-swe-agent), [MetaGPT](https://github.com/FoundationAgents/MetaGPT)). This system evaluates agent trajectories using both **deterministic metrics** and **LLM-as-a-Judge** probabilistic metrics.
 
 ## Overview
 
