@@ -62,4 +62,3 @@ Bewertet die Qualität der Kommunikation zwischen den Agenten.
 *   **1:** Sinnloses "Ping-Pong", leere Nachrichten, endloses Danke-Sagen.
 *   **5:** Hochdichte Informationsübertragung, klare Arbeitsverteilung, konstruktives Feedback.
 *   *Lasse dieses Feld leer für Single-Agent Systeme (SWE-agent, OpenHands).*
- 
