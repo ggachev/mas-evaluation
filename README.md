@@ -18,6 +18,7 @@ This project is part of a Master's thesis on evaluating multi-agent coding syste
 
 - Python 3.8+
 - API access to an LLM judge (Helmholtz Blablador or OpenAI)
+- requirements.txt under metrics_evaluation/requirements.txt
 
 ### Setup
 
