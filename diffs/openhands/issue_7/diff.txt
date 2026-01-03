@@ -1,0 +1,29 @@
+diff --git a/lib/matplotlib/widgets.py b/lib/matplotlib/widgets.py
+index a199e45d40..c89e7006da 100644
+--- a/lib/matplotlib/widgets.py
++++ b/lib/matplotlib/widgets.py
+@@ -2369,7 +2369,23 @@ class ToolLineHandles:
+         line_fun = ax.axvline if self.direction == 'horizontal' else ax.axhline
+         self._line_props = line_props
+ 
+-        self.artists = [line_fun(p, **line_props) for p in positions]
++        # Creating lines can affect the axes data limits (autoscaling). Temporarily
++        # disable autoscaling for the relevant axis to avoid forcing limits to
++        # include the initial handle positions (which can be at 0).
++        if self.direction == 'horizontal':
++            prev_autoscale = self.ax.get_autoscalex_on()
++            try:
++                self.ax.set_autoscalex_on(False)
++                self.artists = [line_fun(p, **line_props) for p in positions]
++            finally:
++                self.ax.set_autoscalex_on(prev_autoscale)
++        else:
++            prev_autoscale = self.ax.get_autoscaley_on()
++            try:
++                self.ax.set_autoscaley_on(False)
++                self.artists = [line_fun(p, **line_props) for p in positions]
++            finally:
++                self.ax.set_autoscaley_on(prev_autoscale)
+ 
+     @property
+     def positions(self):

@@ -1,0 +1,449 @@
+diff --git a/workspace/flask/src/flask/blueprints.py b/workspace/flask/src/flask/blueprints.py
+new file mode 100644
+index 00000000..d1062045
+--- /dev/null
++++ b/workspace/flask/src/flask/blueprints.py
+@@ -0,0 +1,201 @@
++import os
++import typing as t
++from collections import defaultdict
++from functools import update_wrapper
++
++from . import typing as ft
++from .scaffold import _endpoint_from_view_func
++from .scaffold import _sentinel
++from .scaffold import Scaffold
++from .scaffold import setupmethod
++
++if t.TYPE_CHECKING:  # pragma: no cover
++    from .app import Flask
++
++DeferredSetupFunction = t.Callable[["BlueprintSetupState"], t.Callable]
++T_after_request = t.TypeVar("T_after_request", bound=ft.AfterRequestCallable)
++T_before_request = t.TypeVar("T_before_request", bound=ft.BeforeRequestCallable)
++T_error_handler = t.TypeVar("T_error_handler", bound=ft.ErrorHandlerCallable)
++T_teardown = t.TypeVar("T_teardown", bound=ft.TeardownCallable)
++T_template_context_processor = t.TypeVar(
++    "T_template_context_processor", bound=ft.TemplateContextProcessorCallable
++)
++T_template_filter = t.TypeVar("T_template_filter", bound=ft.TemplateFilterCallable)
++T_template_global = t.TypeVar("T_template_global", bound=ft.TemplateGlobalCallable)
++T_template_test = t.TypeVar("T_template_test", bound=ft.TemplateTestCallable)
++T_url_defaults = t.TypeVar("T_url_defaults", bound=ft.URLDefaultCallable)
++T_url_value_preprocessor = t.TypeVar(
++    "T_url_value_preprocessor", bound=ft.URLValuePreprocessorCallable
++)
++
++
++class BlueprintSetupState:
++    """Temporary holder object for registering a blueprint with the
++    application.  An instance of this class is created by the
++    :meth:`~flask.Blueprint.make_setup_state` method and later passed
++    to all register callback functions.
++    """
++
++    def __init__(
++        self,
++        blueprint: "Blueprint",
++        app: "Flask",
++        options: t.Any,
++        first_registration: bool,
++    ) -> None:
++        #: a reference to the current application
++        self.app = app
++
++        #: a reference to the blueprint that created this setup state.
++        self.blueprint = blueprint
++
++        #: a dictionary with all options that were passed to the
++        #: :meth:`~flask.Flask.register_blueprint` method.
++        self.options = options
++
++        #: as blueprints can be registered multiple times with the
++        #: application and not everything wants to be registered
++        #: multiple times on it, this attribute can be used to figure
++        #: out if the blueprint was registered in the past already.
++        self.first_registration = first_registration
++
++        subdomain = self.options.get("subdomain")
++        if subdomain is None:
++            subdomain = self.blueprint.subdomain
++
++        #: The subdomain that the blueprint should be active for, ``None``
++        #: otherwise.
++        self.subdomain = subdomain
++
++        url_prefix = self.options.get("url_prefix")
++        if url_prefix is None:
++            url_prefix = self.blueprint.url_prefix
++        #: The prefix that should be used for all URLs defined on the
++        #: blueprint.
++        self.url_prefix = url_prefix
++
++        self.name = self.options.get("name", blueprint.name)
++        self.name_prefix = self.options.get("name_prefix", "")
++
++        #: A dictionary with URL defaults that is added to each and every
++        #: URL that was defined with the blueprint.
++        self.url_defaults = dict(self.blueprint.url_values_defaults)
++        self.url_defaults.update(self.options.get("url_defaults", ()))
++
++    def add_url_rule(
++        self,
++        rule: str,
++        endpoint: t.Optional[str] = None,
++        view_func: t.Optional[t.Callable] = None,
++        **options: t.Any,
++    ) -> None:
++        """A helper method to register a rule (and optionally a view function)
++        to the application.  The endpoint is automatically prefixed with the
++        blueprint's name.
++        """
++        if self.url_prefix is not None:
++            if rule:
++                rule = "/".join((self.url_prefix.rstrip("/"), rule.lstrip("/")))
++            else:
++                rule = self.url_prefix
++        options.setdefault("subdomain", self.subdomain)
++        if endpoint is None:
++            endpoint = _endpoint_from_view_func(view_func)  # type: ignore
++        defaults = self.url_defaults
++        if "defaults" in options:
++            defaults = dict(defaults, **options.pop("defaults"))
++
++        self.app.add_url_rule(
++            rule,
++            f"{self.name_prefix}.{self.name}.{endpoint}".lstrip("."),
++            view_func,
++            defaults=defaults,
++            **options,
++        )
++
++
++class Blueprint(Scaffold):
++    """Represents a blueprint, a collection of routes and other
++    app-related functions that can be registered on a real application
++    later.
++
++    A blueprint is an object that allows defining application functions
++    without requiring an application object ahead of time. It uses the
++    same decorators as :class:`~flask.Flask`, but defers the need for an
++    application by recording them for later registration.
++
++    Decorating a function with a blueprint creates a deferred function
++    that is called with :class:`~flask.blueprints.BlueprintSetupState`
++    when the blueprint is registered on an application.
++
++    See :doc:`/blueprints` for more information.
++
++    :param name: The name of the blueprint. Will be prepended to each
++        endpoint name.
++    :param import_name: The name of the blueprint package, usually
++        ``__name__``. This helps locate the ``root_path`` for the
++        blueprint.
++    :param static_folder: A folder with static files that should be
++        served by the blueprint's static route. The path is relative to
++        the blueprint's root path. Blueprint static files are disabled
++        by default.
++    :param static_url_path: The url to serve static files from.
++        Defaults to ``static_folder``. If the blueprint does not have
++        a ``url_prefix``, the app's static route will take precedence,
++        and the blueprint's static files won't be accessible.
++    :param template_folder: A folder with templates that should be added
++        to the app's template search path. The path is relative to the
++        blueprint's root path. Blueprint templates are disabled by
++        default. Blueprint templates have a lower precedence than those
++        in the app's templates folder.
++    :param url_prefix: A path to prepend to all of the blueprint's URLs,
++        to make them distinct from the rest of the app's routes.
++    :param subdomain: A subdomain that blueprint routes will match on by
++        default.
++    :param url_defaults: A dict of default values that blueprint routes
++        will receive by default.
++    :param root_path: By default, the blueprint will automatically set
++        this based on ``import_name``. In certain situations this
++        automatic detection can fail, so the path can be specified
++        manually instead.
++
++    .. versionchanged:: 1.1.0
++        Blueprints have a ``cli`` group to register nested CLI commands.
++        The ``cli_group`` parameter controls the name of the group under
++        the ``flask`` command.
++
++    .. versionadded:: 0.7
++    """
++
++    _got_registered_once = False
++
++    def __init__(
++        self,
++        name: str,
++        import_name: str,
++        static_folder: t.Optional[t.Union[str, os.PathLike]] = None,
++        static_url_path: t.Optional[str] = None,
++        template_folder: t.Optional[t.Union[str, os.PathLike]] = None,
++        url_prefix: t.Optional[str] = None,
++        subdomain: t.Optional[str] = None,
++        url_defaults: t.Optional[dict] = None,
++        root_path: t.Optional[str] = None,
++        cli_group: t.Optional[str] = _sentinel,  # type: ignore
++    ):
++        super().__init__(
++            import_name=import_name,
++            static_folder=static_folder,
++            static_url_path=static_url_path,
++            template_folder=template_folder,
++            root_path=root_path,
++        )
++
++        if not name:
++            raise ValueError("'name' must not be empty.")
++        if "." in name:
++            raise ValueError("'name' may not contain a dot '.' character.")
++
++        self.name = name
++        self.url_prefix = url_prefix
++        self.subdomain = subdomain
++        self.deferred_functions: t.List[DeferredSetupFunction] = []
+\ No newline at end of file
+diff --git a/workspace/scikit-learn/sklearn/base.py b/workspace/scikit-learn/sklearn/base.py
+new file mode 100644
+index 00000000..4a3a9fee
+--- /dev/null
++++ b/workspace/scikit-learn/sklearn/base.py
+@@ -0,0 +1,225 @@
++"""Base classes for all estimators."""
++
++# Author: Gael Varoquaux <gael.varoquaux@normalesup.org>
++# License: BSD 3 clause
++
++import copy
++import warnings
++from collections import defaultdict
++
++import numpy as np
++from scipy import sparse
++from .externals import six
++from .utils.fixes import signature
++from . import __version__
++
++
++##############################################################################
++def _first_and_last_element(arr):
++    """Returns first and last element of numpy array or sparse matrix."""
++    if isinstance(arr, np.ndarray) or hasattr(arr, 'data'):
++        # numpy array or sparse matrix with .data attribute
++        data = arr.data if sparse.issparse(arr) else arr
++        return data.flat[0], data.flat[-1]
++    else:
++        # Sparse matrices without .data attribute. Only dok_matrix at
++        # the time of writing, in this case indexing is fast
++        return arr[0, 0], arr[-1, -1]
++
++
++def clone(estimator, safe=True):
++    """Constructs a new estimator with the same parameters.
++
++    Clone does a deep copy of the model in an estimator
++    without actually copying attached data. It yields a new estimator
++    with the same parameters that has not been fit on any data.
++
++    Parameters
++    ----------
++    estimator : estimator object, or list, tuple or set of objects
++        The estimator or group of estimators to be cloned
++
++    safe : boolean, optional
++        If safe is false, clone will fall back to a deep copy on objects
++        that are not estimators.
++    """
++    estimator_type = type(estimator)
++    if estimator_type in (list, tuple, set, frozenset):
++        return estimator_type([clone(e, safe=safe) for e in estimator])
++    elif not hasattr(estimator, 'get_params') or isinstance(estimator, type):
++        if safe:
++            raise TypeError("Cannot clone object '%s' (type %s): "
++                            "it does not seem to be a scikit-learn estimator "
++                            "as it does not implement a 'get_params' methods."
++                            % (repr(estimator), type(estimator)))
++        else:
++            return estimator
++    elif not hasattr(estimator, 'get_params'):
++        if not safe:
++            return copy.deepcopy(estimator)
++        else:
++            raise TypeError("Cannot clone object '%s' (type %s): "
++                            "it does not seem to be a scikit-learn estimator "
++                            "as it does not implement a 'get_params' methods."
++                            % (repr(estimator), type(estimator)))
++    klass = estimator.__class__
++    new_object_params = estimator.get_params(deep=False)
++    for name, param in six.iteritems(new_object_params):
++        new_object_params[name] = clone(param, safe=False)
++    new_object = klass(**new_object_params)
++    params_set = new_object.get_params(deep=False)
++
++    # quick sanity check of the parameters of the clone
++    for name in new_object_params:
++        param1 = new_object_params[name]
++        param2 = params_set[name]
++        if param1 is not param2:
++            raise RuntimeError('Cannot clone object %s, as the constructor '
++                               'either does not set or modifies parameter %s' %
++                               (estimator, name))
++    return new_object
++
++
++###############################################################################
++def _pprint(params, offset=0, printer=repr):
++    """Pretty print the dictionary 'params'
++
++    Parameters
++    ----------
++    params : dict
++        The dictionary to pretty print
++
++    offset : int
++        The offset in characters to add at the begin of each line.
++
++    printer : callable
++        The function to convert entries to strings, typically
++        the builtin str or repr
++    """
++    # Do a multi-line justified repr:
++    options = np.get_printoptions()
++    np.set_printoptions(precision=5, threshold=64, edgeitems=2)
++    params_list = list()
++    this_line_length = offset
++    line_sep = ',\n' + (1 + offset // 2) * ' '
++    for i, (k, v) in enumerate(sorted(six.iteritems(params))):
++        if type(v) is float:
++            # use str for representing floating point numbers
++            # this way we get consistent representation across
++            # architectures and versions.
++            this_repr = '%s=%s' % (k, str(v))
++        else:
++            # use repr of the rest
++            this_repr = '%s=%s' % (k, printer(v))
++        if len(this_repr) > 500:
++            this_repr = this_repr[:300] + '...' + this_repr[-100:]
++        if i > 0:
++            if (this_line_length + len(this_repr) >= 75 or '\n' in this_repr):
++                params_list.append(line_sep)
++                this_line_length = len(line_sep)
++            else:
++                params_list.append(', ')
++                this_line_length += 2
++        params_list.append(this_repr)
++        this_line_length += len(this_repr)
++
++    np.set_printoptions(**options)
++    lines = ''.join(params_list)
++    # Strip trailing space to avoid nightmare in doctests
++    lines = '\n'.join(l.rstrip(' ') for l in lines.split('\n'))
++    return lines
++
++
++###############################################################################
++class BaseEstimator(object):
++    """Base class for all estimators in scikit-learn
++
++    Notes
++    -----
++    All estimators should specify all the parameters that can be set
++    at the class level in their ``__init__`` as explicit keyword
++    arguments (no ``*args`` or ``**kwargs``).
++    """
++
++    @classmethod
++    def _get_param_names(cls):
++        """Get parameter names for the estimator"""
++        # fetch the constructor or the original constructor before
++        # deprecation wrapping if any
++        init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
++        if init is object.__init__:
++            # No explicit constructor to introspect
++            return []
++
++        # introspect the constructor arguments to find the model parameters
++        # to represent
++        init_signature = signature(init)
++        # Consider the constructor parameters excluding 'self'
++        parameters = [p for p in init_signature.parameters.values()
++                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
++        for p in parameters:
++            if p.kind == p.VAR_POSITIONAL:
++                raise RuntimeError("scikit-learn estimators should always "
++                                   "specify their parameters in the signature"
++                                   " of their __init__ (no varargs)."
++                                   " %s with constructor %s doesn't "
++                                   " follow this convention."
++                                   % (cls, init_signature))
++        # Extract and sort argument names excluding 'self'
++        return sorted([p.name for p in parameters])
++
++    def get_params(self, deep=True):
++        """Get parameters for this estimator.
++
++        Parameters
++        ----------
++        deep : boolean, optional
++            If True, will return the parameters for this estimator and
++            contained subobjects that are estimators.
++
++        Returns
++        -------
++        params : mapping of string to any
++            Parameter names mapped to their values.
++        """
++        out = dict()
++        for key in self._get_param_names():
++            value = getattr(self, key, None)
++            if deep and hasattr(value, 'get_params'):
++                deep_items = value.get_params().items()
++                out.update((key + '__' + k, val) for k, val in deep_items)
++            out[key] = value
++        return out
++
++    def set_params(self, **params):
++        """Set the parameters of this estimator.
++
++        The method works on simple estimators as well as on nested objects
++        (such as pipelines). The latter have parameters of the form
++        ``<component>__<parameter>`` so that it's possible to update each
++        component of a nested object.
++        """
++        if not params:
++            # Simple optimization to gain speed (inspect is slow)
++            return self
++        valid_params = self.get_params(deep=True)
++
++        nested_params = defaultdict(dict)  # grouped by prefix
++        for key, value in params.items():
++            key, delim, sub_key = key.partition('__')
++            if key not in valid_params:
++                raise ValueError('Invalid parameter %s for estimator %s. '
++                                 'Check the list of available parameters '
++                                 'with `estimator.get_params().keys()`.' %
++                                 (key, self))
++
++            if delim:
++                nested_params[key][sub_key] = value
++            else:
++                setattr(self, key, value)
++                valid_params[key] = value
++
++        for key, sub_params in nested_params.items():
++            valid_params[key].set_params(**sub_params)
++
++        return self
+\ No newline at end of file
+diff --git a/flask/src/flask/blueprints.py b/flask/src/flask/blueprints.py
+index 1234567..89abcde 100644
+--- a/flask/src/flask/blueprints.py
++++ b/flask/src/flask/blueprints.py
+@@ -193,6 +193,8 @@ class Blueprint(Scaffold):
+         if not name:
+             raise ValueError("'name' must not be empty.")
+         if "." in name:
+             raise ValueError("'name' may not contain a dot '.' character.")

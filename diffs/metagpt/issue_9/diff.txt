@@ -1,0 +1,23 @@
+--- a/pytest/src/_pytest/capture.py
++++ b/pytest/src/_pytest/capture.py
+@@ -432,8 +432,13 @@
+-    def write(self, obj):
+-        if isinstance(obj, six.text_type):
+-            obj = obj.encode(self.encoding, "replace")
+-        elif _PY3:
+-            raise TypeError(
+-                "write() argument must be str, not {}".format(type(obj).__name__)
+-            )
+-        self.buffer.write(obj)
++    def write(self, obj):
++        if isinstance(obj, six.text_type):
++            obj = obj.encode(self.encoding, "replace")
++        elif isinstance(obj, (bytes, bytearray)):
++            # Write bytes directly
++            self.buffer.write(obj)
++            return
++        elif _PY3:
++            raise TypeError(
++                "write() argument must be str, not {}".format(type(obj).__name__)
++            )
++        self.buffer.write(obj)

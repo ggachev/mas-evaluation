@@ -1,0 +1,663 @@
+diff --git a/metagpt/utils/token_counter.py b/metagpt/utils/token_counter.py
+index e8bf9d81..16c32861 100644
+--- a/metagpt/utils/token_counter.py
++++ b/metagpt/utils/token_counter.py
+@@ -39,10 +39,12 @@ TOKEN_COSTS = {
+     "gpt-4-vision-preview": {"prompt": 0.01, "completion": 0.03},  # TODO add extra image price calculator
+     "gpt-4-1106-vision-preview": {"prompt": 0.01, "completion": 0.03},
+     "gpt-4o": {"prompt": 0.005, "completion": 0.015},
++    "1 - GPT-OSS-120b - an open model released by OpenAI in August 2025": {"prompt": 0.005, "completion": 0.015},
+     "gpt-4o-mini": {"prompt": 0.00015, "completion": 0.0006},
+     "gpt-4o-mini-2024-07-18": {"prompt": 0.00015, "completion": 0.0006},
+     "gpt-4o-2024-05-13": {"prompt": 0.005, "completion": 0.015},
+     "gpt-4o-2024-08-06": {"prompt": 0.0025, "completion": 0.01},
++    "gpt-4o-2024-08-06": {"prompt": 0.0025, "completion": 0.01},
+     "o1-preview": {"prompt": 0.015, "completion": 0.06},
+     "o1-preview-2024-09-12": {"prompt": 0.015, "completion": 0.06},
+     "o1-mini": {"prompt": 0.003, "completion": 0.012},
+@@ -78,6 +80,7 @@ TOKEN_COSTS = {
+     "openai/gpt-4": {"prompt": 0.03, "completion": 0.06},  # start, for openrouter
+     "openai/gpt-4-turbo": {"prompt": 0.01, "completion": 0.03},
+     "openai/gpt-4o": {"prompt": 0.005, "completion": 0.015},
++    "openai/1 - GPT-OSS-120b - an open model released by OpenAI in August 2025": {"prompt": 0.005, "completion": 0.015},
+     "openai/gpt-4o-2024-05-13": {"prompt": 0.005, "completion": 0.015},
+     "openai/gpt-4o-mini": {"prompt": 0.00015, "completion": 0.0006},
+     "openai/gpt-4o-mini-2024-07-18": {"prompt": 0.00015, "completion": 0.0006},
+@@ -250,6 +253,7 @@ TOKEN_MAX = {
+     "o1-mini": 128000,
+     "o1-mini-2024-09-12": 128000,
+     "gpt-4o": 128000,
++    "1 - GPT-OSS-120b - an open model released by OpenAI in August 2025": 131000,
+     "gpt-4o-2024-05-13": 128000,
+     "gpt-4o-2024-08-06": 128000,
+     "gpt-4o-mini-2024-07-18": 128000,
+@@ -298,6 +302,7 @@ TOKEN_MAX = {
+     "openai/gpt-4": 8192,  # start, for openrouter
+     "openai/gpt-4-turbo": 128000,
+     "openai/gpt-4o": 128000,
++    "openai/1 - GPT-OSS-120b - an open model released by OpenAI in August 2025": 131000,
+     "openai/gpt-4o-2024-05-13": 128000,
+     "openai/gpt-4o-mini": 128000,
+     "openai/gpt-4o-mini-2024-07-18": 128000,
+@@ -457,6 +462,7 @@ def count_message_tokens(messages, model="gpt-3.5-turbo-0125"):
+         "gpt-4-vision-preview",
+         "gpt-4-1106-vision-preview",
+         "gpt-4o",
++        "1 - GPT-OSS-120b - an open model released by OpenAI in August 2025",
+         "gpt-4o-2024-05-13",
+         "gpt-4o-2024-08-06",
+         "gpt-4o-mini",
+diff --git a/pytest.ini b/pytest.ini
+deleted file mode 100644
+index 9415132c..00000000
+--- a/pytest.ini
++++ /dev/null
+@@ -1,168 +0,0 @@
+-[pytest]
+-testpaths = tests
+-addopts = 
+-    --continue-on-collection-errors
+-    --doctest-modules
+-    --cov=./metagpt/
+-    --cov-report=xml:cov.xml
+-    --cov-report=html:htmlcov
+-    --durations=20
+-    --ignore=tests/metagpt/roles/di/run_swe_agent_for_benchmark.py
+-    --ignore=tests/metagpt/actions/di/test_write_analysis_code.py
+-    --ignore=tests/metagpt/actions/requirement_analysis/requirement/test_pic2txt.py
+-    --ignore=tests/metagpt/actions/test_action_multi_llm.py
+-    --ignore=tests/metagpt/actions/test_action_node.py
+-    --ignore=tests/metagpt/actions/test_debug_error.py
+-    --ignore=tests/metagpt/actions/test_design_api.py
+-    --ignore=tests/metagpt/actions/test_extract_readme.py
+-    --ignore=tests/metagpt/actions/test_import_repo.py
+-    --ignore=tests/metagpt/actions/test_invoice_ocr.py
+-    --ignore=tests/metagpt/actions/test_prepare_documents.py
+-    --ignore=tests/metagpt/actions/test_project_management.py
+-    --ignore=tests/metagpt/actions/test_rebuild_class_view.py
+-    --ignore=tests/metagpt/actions/test_research.py
+-    --ignore=tests/metagpt/actions/test_summarize_code.py
+-    --ignore=tests/metagpt/actions/test_write_code.py
+-    --ignore=tests/metagpt/actions/test_write_code_plan_and_change_an.py
+-    --ignore=tests/metagpt/actions/test_write_code_review.py
+-    --ignore=tests/metagpt/actions/test_write_prd.py
+-    --ignore=tests/metagpt/exp_pool/test_decorator.py
+-    --ignore=tests/metagpt/learn/test_text_to_image.py
+-    --ignore=tests/metagpt/learn/test_text_to_speech.py
+-    --ignore=tests/metagpt/management/test_skill_manager.py
+-    --ignore=tests/metagpt/memory/test_brain_memory.py
+-    --ignore=tests/metagpt/memory/test_longterm_memory.py
+-    --ignore=tests/metagpt/memory/test_memory.py
+-    --ignore=tests/metagpt/memory/test_memory_storage.py
+-    --ignore=tests/metagpt/memory/test_role_zero_memory.py
+-    --ignore=tests/metagpt/planner/test_action_planner.py
+-    --ignore=tests/metagpt/planner/test_basic_planner.py
+-    --ignore=tests/metagpt/provider/test_anthropic_api.py
+-    --ignore=tests/metagpt/provider/test_ark.py
+-    --ignore=tests/metagpt/provider/test_bedrock_api.py
+-    --ignore=tests/metagpt/provider/test_general_api_requestor.py
+-    --ignore=tests/metagpt/provider/test_openai.py
+-    --ignore=tests/metagpt/provider/test_qianfan_api.py
+-    --ignore=tests/metagpt/provider/zhipuai/test_async_sse_client.py
+-    --ignore=tests/metagpt/provider/zhipuai/test_zhipu_model_api.py
+-    --ignore=tests/metagpt/rag/engines/test_simple.py
+-    --ignore=tests/metagpt/rag/factories/test_base.py
+-    --ignore=tests/metagpt/rag/factories/test_embedding.py
+-    --ignore=tests/metagpt/rag/factories/test_index.py
+-    --ignore=tests/metagpt/rag/factories/test_llm.py
+-    --ignore=tests/metagpt/rag/factories/test_ranker.py
+-    --ignore=tests/metagpt/rag/factories/test_retriever.py
+-    --ignore=tests/metagpt/rag/parser/test_omniparse.py
+-    --ignore=tests/metagpt/rag/rankers/test_base_ranker.py
+-    --ignore=tests/metagpt/rag/rankers/test_object_ranker.py
+-    --ignore=tests/metagpt/rag/retrievers/test_base_retriever.py
+-    --ignore=tests/metagpt/rag/retrievers/test_bm25_retriever.py
+-    --ignore=tests/metagpt/rag/retrievers/test_chroma_retriever.py
+-    --ignore=tests/metagpt/rag/retrievers/test_es_retriever.py
+-    --ignore=tests/metagpt/rag/retrievers/test_faiss_retriever.py
+-    --ignore=tests/metagpt/rag/retrievers/test_hybrid_retriever.py
+-    --ignore=tests/metagpt/roles/di/test_data_analyst.py
+-    --ignore=tests/metagpt/roles/di/test_data_interpreter.py
+-    --ignore=tests/metagpt/roles/di/test_role_zero.py
+-    --ignore=tests/metagpt/roles/di/test_routing.py
+-    --ignore=tests/metagpt/roles/di/test_swe_agent.py
+-    --ignore=tests/metagpt/roles/di/test_team_leader.py
+-    --ignore=tests/metagpt/roles/test_architect.py
+-    --ignore=tests/metagpt/roles/test_assistant.py
+-    --ignore=tests/metagpt/roles/test_engineer.py
+-    --ignore=tests/metagpt/roles/test_invoice_ocr_assistant.py
+-    --ignore=tests/metagpt/roles/test_product_manager.py
+-    --ignore=tests/metagpt/roles/test_project_manager.py
+-    --ignore=tests/metagpt/roles/test_qa_engineer.py
+-    --ignore=tests/metagpt/roles/test_researcher.py
+-    --ignore=tests/metagpt/roles/test_role.py
+-    --ignore=tests/metagpt/roles/test_teacher.py
+-    --ignore=tests/metagpt/roles/test_tutorial_assistant.py
+-    --ignore=tests/metagpt/strategy/examples/test_creative_writing.py
+-    --ignore=tests/metagpt/strategy/examples/test_game24.py
+-    --ignore=tests/metagpt/strategy/test_planner.py
+-    --ignore=tests/metagpt/strategy/test_solver.py
+-    --ignore=tests/metagpt/test_config.py
+-    --ignore=tests/metagpt/test_context.py
+-    --ignore=tests/metagpt/test_context_mixin.py
+-    --ignore=tests/metagpt/test_document.py
+-    --ignore=tests/metagpt/test_environment.py
+-    --ignore=tests/metagpt/test_llm.py
+-    --ignore=tests/metagpt/test_message.py
+-    --ignore=tests/metagpt/test_prompt.py
+-    --ignore=tests/metagpt/test_repo_parser.py
+-    --ignore=tests/metagpt/test_reporter.py
+-    --ignore=tests/metagpt/test_role.py
+-    --ignore=tests/metagpt/test_schema.py
+-    --ignore=tests/metagpt/test_software_company.py
+-    --ignore=tests/metagpt/test_subscription.py
+-    --ignore=tests/metagpt/test_team.py
+-    --ignore=tests/metagpt/tools/libs/test_browser.py
+-    --ignore=tests/metagpt/tools/libs/test_cr.py
+-    --ignore=tests/metagpt/tools/libs/test_data_preprocess.py
+-    --ignore=tests/metagpt/tools/libs/test_editor.py
+-    --ignore=tests/metagpt/tools/libs/test_email_login.py
+-    --ignore=tests/metagpt/tools/libs/test_env.py
+-    --ignore=tests/metagpt/tools/libs/test_feature_engineering.py
+-    --ignore=tests/metagpt/tools/libs/test_gpt_v_generator.py
+-    --ignore=tests/metagpt/tools/libs/test_image_getter.py
+-    --ignore=tests/metagpt/tools/libs/test_index_repo.py
+-    --ignore=tests/metagpt/tools/libs/test_linter.py
+-    --ignore=tests/metagpt/tools/libs/test_sd_engine.py
+-    --ignore=tests/metagpt/tools/libs/test_shell.py
+-    --ignore=tests/metagpt/tools/libs/test_terminal.py
+-    --ignore=tests/metagpt/tools/libs/test_web_scraping.py
+-    --ignore=tests/metagpt/tools/test_azure_tts.py
+-    --ignore=tests/metagpt/tools/test_iflytek_tts.py
+-    --ignore=tests/metagpt/tools/test_metagpt_oas3_api_svc.py
+-    --ignore=tests/metagpt/tools/test_metagpt_text_to_image.py
+-    --ignore=tests/metagpt/tools/test_moderation.py
+-    --ignore=tests/metagpt/tools/test_openai_text_to_embedding.py
+-    --ignore=tests/metagpt/tools/test_openai_text_to_image.py
+-    --ignore=tests/metagpt/tools/test_openapi_v3_hello.py
+-    --ignore=tests/metagpt/tools/test_prompt_writer.py
+-    --ignore=tests/metagpt/tools/test_search_engine.py
+-    --ignore=tests/metagpt/tools/test_summarize.py
+-    --ignore=tests/metagpt/tools/test_tool_convert.py
+-    --ignore=tests/metagpt/tools/test_tool_recommend.py
+-    --ignore=tests/metagpt/tools/test_tool_registry.py
+-    --ignore=tests/metagpt/tools/test_translate.py
+-    --ignore=tests/metagpt/tools/test_ut_writer.py
+-    --ignore=tests/metagpt/tools/test_web_browser_engine.py
+-    --ignore=tests/metagpt/tools/test_web_browser_engine_playwright.py
+-    --ignore=tests/metagpt/tools/test_web_browser_engine_selenium.py
+-    --ignore=tests/metagpt/utils/test_ahttp_client.py
+-    --ignore=tests/metagpt/utils/test_code_parser.py
+-    --ignore=tests/metagpt/utils/test_common.py
+-    --ignore=tests/metagpt/utils/test_cost_manager.py
+-    --ignore=tests/metagpt/utils/test_custom_decoder.py
+-    --ignore=tests/metagpt/utils/test_dependency_file.py
+-    --ignore=tests/metagpt/utils/test_di_graph_repository.py
+-    --ignore=tests/metagpt/utils/test_file.py
+-    --ignore=tests/metagpt/utils/test_file_repository.py
+-    --ignore=tests/metagpt/utils/test_git_repository.py
+-    --ignore=tests/metagpt/utils/test_human_interaction.py
+-    --ignore=tests/metagpt/utils/test_json_to_markdown.py
+-    --ignore=tests/metagpt/utils/test_mermaid.py
+-    --ignore=tests/metagpt/utils/test_output_parser.py
+-    --ignore=tests/metagpt/utils/test_parse_html.py
+-    --ignore=tests/metagpt/utils/test_project_repo.py
+-    --ignore=tests/metagpt/utils/test_pycst.py
+-    --ignore=tests/metagpt/utils/test_redis.py
+-    --ignore=tests/metagpt/utils/test_repair_llm_raw_output.py
+-    --ignore=tests/metagpt/utils/test_repo_to_markdown.py
+-    --ignore=tests/metagpt/utils/test_s3.py
+-    --ignore=tests/metagpt/utils/test_save_code.py
+-    --ignore=tests/metagpt/utils/test_serialize.py
+-    --ignore=tests/metagpt/utils/test_session.py
+-    --ignore=tests/metagpt/utils/test_text.py
+-    --ignore=tests/metagpt/utils/test_token_counter.py
+-    --ignore=tests/metagpt/utils/test_tree.py
+-    --ignore=tests/metagpt/utils/test_visual_graph_repo.py
+-norecursedirs = 
+-    tests/metagpt/ext
+-    tests/metagpt/environment/android_env
+-    tests/metagpt/environment/werewolf_env
+-    tests/metagpt/environment/minecraft_env
+-    tests/metagpt/environment/stanford_town_env
+-    tests/metagpt/serialize_deserialize
+diff --git a/workspace/flask/src/flask/blueprints.py b/workspace/flask/src/flask/blueprints.py
+deleted file mode 100644
+index d1062045..00000000
+--- a/workspace/flask/src/flask/blueprints.py
++++ /dev/null
+@@ -1,201 +0,0 @@
+-import os
+-import typing as t
+-from collections import defaultdict
+-from functools import update_wrapper
+-
+-from . import typing as ft
+-from .scaffold import _endpoint_from_view_func
+-from .scaffold import _sentinel
+-from .scaffold import Scaffold
+-from .scaffold import setupmethod
+-
+-if t.TYPE_CHECKING:  # pragma: no cover
+-    from .app import Flask
+-
+-DeferredSetupFunction = t.Callable[["BlueprintSetupState"], t.Callable]
+-T_after_request = t.TypeVar("T_after_request", bound=ft.AfterRequestCallable)
+-T_before_request = t.TypeVar("T_before_request", bound=ft.BeforeRequestCallable)
+-T_error_handler = t.TypeVar("T_error_handler", bound=ft.ErrorHandlerCallable)
+-T_teardown = t.TypeVar("T_teardown", bound=ft.TeardownCallable)
+-T_template_context_processor = t.TypeVar(
+-    "T_template_context_processor", bound=ft.TemplateContextProcessorCallable
+-)
+-T_template_filter = t.TypeVar("T_template_filter", bound=ft.TemplateFilterCallable)
+-T_template_global = t.TypeVar("T_template_global", bound=ft.TemplateGlobalCallable)
+-T_template_test = t.TypeVar("T_template_test", bound=ft.TemplateTestCallable)
+-T_url_defaults = t.TypeVar("T_url_defaults", bound=ft.URLDefaultCallable)
+-T_url_value_preprocessor = t.TypeVar(
+-    "T_url_value_preprocessor", bound=ft.URLValuePreprocessorCallable
+-)
+-
+-
+-class BlueprintSetupState:
+-    """Temporary holder object for registering a blueprint with the
+-    application.  An instance of this class is created by the
+-    :meth:`~flask.Blueprint.make_setup_state` method and later passed
+-    to all register callback functions.
+-    """
+-
+-    def __init__(
+-        self,
+-        blueprint: "Blueprint",
+-        app: "Flask",
+-        options: t.Any,
+-        first_registration: bool,
+-    ) -> None:
+-        #: a reference to the current application
+-        self.app = app
+-
+-        #: a reference to the blueprint that created this setup state.
+-        self.blueprint = blueprint
+-
+-        #: a dictionary with all options that were passed to the
+-        #: :meth:`~flask.Flask.register_blueprint` method.
+-        self.options = options
+-
+-        #: as blueprints can be registered multiple times with the
+-        #: application and not everything wants to be registered
+-        #: multiple times on it, this attribute can be used to figure
+-        #: out if the blueprint was registered in the past already.
+-        self.first_registration = first_registration
+-
+-        subdomain = self.options.get("subdomain")
+-        if subdomain is None:
+-            subdomain = self.blueprint.subdomain
+-
+-        #: The subdomain that the blueprint should be active for, ``None``
+-        #: otherwise.
+-        self.subdomain = subdomain
+-
+-        url_prefix = self.options.get("url_prefix")
+-        if url_prefix is None:
+-            url_prefix = self.blueprint.url_prefix
+-        #: The prefix that should be used for all URLs defined on the
+-        #: blueprint.
+-        self.url_prefix = url_prefix
+-
+-        self.name = self.options.get("name", blueprint.name)
+-        self.name_prefix = self.options.get("name_prefix", "")
+-
+-        #: A dictionary with URL defaults that is added to each and every
+-        #: URL that was defined with the blueprint.
+-        self.url_defaults = dict(self.blueprint.url_values_defaults)
+-        self.url_defaults.update(self.options.get("url_defaults", ()))
+-
+-    def add_url_rule(
+-        self,
+-        rule: str,
+-        endpoint: t.Optional[str] = None,
+-        view_func: t.Optional[t.Callable] = None,
+-        **options: t.Any,
+-    ) -> None:
+-        """A helper method to register a rule (and optionally a view function)
+-        to the application.  The endpoint is automatically prefixed with the
+-        blueprint's name.
+-        """
+-        if self.url_prefix is not None:
+-            if rule:
+-                rule = "/".join((self.url_prefix.rstrip("/"), rule.lstrip("/")))
+-            else:
+-                rule = self.url_prefix
+-        options.setdefault("subdomain", self.subdomain)
+-        if endpoint is None:
+-            endpoint = _endpoint_from_view_func(view_func)  # type: ignore
+-        defaults = self.url_defaults
+-        if "defaults" in options:
+-            defaults = dict(defaults, **options.pop("defaults"))
+-
+-        self.app.add_url_rule(
+-            rule,
+-            f"{self.name_prefix}.{self.name}.{endpoint}".lstrip("."),
+-            view_func,
+-            defaults=defaults,
+-            **options,
+-        )
+-
+-
+-class Blueprint(Scaffold):
+-    """Represents a blueprint, a collection of routes and other
+-    app-related functions that can be registered on a real application
+-    later.
+-
+-    A blueprint is an object that allows defining application functions
+-    without requiring an application object ahead of time. It uses the
+-    same decorators as :class:`~flask.Flask`, but defers the need for an
+-    application by recording them for later registration.
+-
+-    Decorating a function with a blueprint creates a deferred function
+-    that is called with :class:`~flask.blueprints.BlueprintSetupState`
+-    when the blueprint is registered on an application.
+-
+-    See :doc:`/blueprints` for more information.
+-
+-    :param name: The name of the blueprint. Will be prepended to each
+-        endpoint name.
+-    :param import_name: The name of the blueprint package, usually
+-        ``__name__``. This helps locate the ``root_path`` for the
+-        blueprint.
+-    :param static_folder: A folder with static files that should be
+-        served by the blueprint's static route. The path is relative to
+-        the blueprint's root path. Blueprint static files are disabled
+-        by default.
+-    :param static_url_path: The url to serve static files from.
+-        Defaults to ``static_folder``. If the blueprint does not have
+-        a ``url_prefix``, the app's static route will take precedence,
+-        and the blueprint's static files won't be accessible.
+-    :param template_folder: A folder with templates that should be added
+-        to the app's template search path. The path is relative to the
+-        blueprint's root path. Blueprint templates are disabled by
+-        default. Blueprint templates have a lower precedence than those
+-        in the app's templates folder.
+-    :param url_prefix: A path to prepend to all of the blueprint's URLs,
+-        to make them distinct from the rest of the app's routes.
+-    :param subdomain: A subdomain that blueprint routes will match on by
+-        default.
+-    :param url_defaults: A dict of default values that blueprint routes
+-        will receive by default.
+-    :param root_path: By default, the blueprint will automatically set
+-        this based on ``import_name``. In certain situations this
+-        automatic detection can fail, so the path can be specified
+-        manually instead.
+-
+-    .. versionchanged:: 1.1.0
+-        Blueprints have a ``cli`` group to register nested CLI commands.
+-        The ``cli_group`` parameter controls the name of the group under
+-        the ``flask`` command.
+-
+-    .. versionadded:: 0.7
+-    """
+-
+-    _got_registered_once = False
+-
+-    def __init__(
+-        self,
+-        name: str,
+-        import_name: str,
+-        static_folder: t.Optional[t.Union[str, os.PathLike]] = None,
+-        static_url_path: t.Optional[str] = None,
+-        template_folder: t.Optional[t.Union[str, os.PathLike]] = None,
+-        url_prefix: t.Optional[str] = None,
+-        subdomain: t.Optional[str] = None,
+-        url_defaults: t.Optional[dict] = None,
+-        root_path: t.Optional[str] = None,
+-        cli_group: t.Optional[str] = _sentinel,  # type: ignore
+-    ):
+-        super().__init__(
+-            import_name=import_name,
+-            static_folder=static_folder,
+-            static_url_path=static_url_path,
+-            template_folder=template_folder,
+-            root_path=root_path,
+-        )
+-
+-        if not name:
+-            raise ValueError("'name' must not be empty.")
+-        if "." in name:
+-            raise ValueError("'name' may not contain a dot '.' character.")
+-
+-        self.name = name
+-        self.url_prefix = url_prefix
+-        self.subdomain = subdomain
+-        self.deferred_functions: t.List[DeferredSetupFunction] = []
+\ No newline at end of file
+diff --git a/workspace/scikit-learn/sklearn/base.py b/workspace/scikit-learn/sklearn/base.py
+deleted file mode 100644
+index 4a3a9fee..00000000
+--- a/workspace/scikit-learn/sklearn/base.py
++++ /dev/null
+@@ -1,225 +0,0 @@
+-"""Base classes for all estimators."""
+-
+-# Author: Gael Varoquaux <gael.varoquaux@normalesup.org>
+-# License: BSD 3 clause
+-
+-import copy
+-import warnings
+-from collections import defaultdict
+-
+-import numpy as np
+-from scipy import sparse
+-from .externals import six
+-from .utils.fixes import signature
+-from . import __version__
+-
+-
+-##############################################################################
+-def _first_and_last_element(arr):
+-    """Returns first and last element of numpy array or sparse matrix."""
+-    if isinstance(arr, np.ndarray) or hasattr(arr, 'data'):
+-        # numpy array or sparse matrix with .data attribute
+-        data = arr.data if sparse.issparse(arr) else arr
+-        return data.flat[0], data.flat[-1]
+-    else:
+-        # Sparse matrices without .data attribute. Only dok_matrix at
+-        # the time of writing, in this case indexing is fast
+-        return arr[0, 0], arr[-1, -1]
+-
+-
+-def clone(estimator, safe=True):
+-    """Constructs a new estimator with the same parameters.
+-
+-    Clone does a deep copy of the model in an estimator
+-    without actually copying attached data. It yields a new estimator
+-    with the same parameters that has not been fit on any data.
+-
+-    Parameters
+-    ----------
+-    estimator : estimator object, or list, tuple or set of objects
+-        The estimator or group of estimators to be cloned
+-
+-    safe : boolean, optional
+-        If safe is false, clone will fall back to a deep copy on objects
+-        that are not estimators.
+-    """
+-    estimator_type = type(estimator)
+-    if estimator_type in (list, tuple, set, frozenset):
+-        return estimator_type([clone(e, safe=safe) for e in estimator])
+-    elif not hasattr(estimator, 'get_params') or isinstance(estimator, type):
+-        if safe:
+-            raise TypeError("Cannot clone object '%s' (type %s): "
+-                            "it does not seem to be a scikit-learn estimator "
+-                            "as it does not implement a 'get_params' methods."
+-                            % (repr(estimator), type(estimator)))
+-        else:
+-            return estimator
+-    elif not hasattr(estimator, 'get_params'):
+-        if not safe:
+-            return copy.deepcopy(estimator)
+-        else:
+-            raise TypeError("Cannot clone object '%s' (type %s): "
+-                            "it does not seem to be a scikit-learn estimator "
+-                            "as it does not implement a 'get_params' methods."
+-                            % (repr(estimator), type(estimator)))
+-    klass = estimator.__class__
+-    new_object_params = estimator.get_params(deep=False)
+-    for name, param in six.iteritems(new_object_params):
+-        new_object_params[name] = clone(param, safe=False)
+-    new_object = klass(**new_object_params)
+-    params_set = new_object.get_params(deep=False)
+-
+-    # quick sanity check of the parameters of the clone
+-    for name in new_object_params:
+-        param1 = new_object_params[name]
+-        param2 = params_set[name]
+-        if param1 is not param2:
+-            raise RuntimeError('Cannot clone object %s, as the constructor '
+-                               'either does not set or modifies parameter %s' %
+-                               (estimator, name))
+-    return new_object
+-
+-
+-###############################################################################
+-def _pprint(params, offset=0, printer=repr):
+-    """Pretty print the dictionary 'params'
+-
+-    Parameters
+-    ----------
+-    params : dict
+-        The dictionary to pretty print
+-
+-    offset : int
+-        The offset in characters to add at the begin of each line.
+-
+-    printer : callable
+-        The function to convert entries to strings, typically
+-        the builtin str or repr
+-    """
+-    # Do a multi-line justified repr:
+-    options = np.get_printoptions()
+-    np.set_printoptions(precision=5, threshold=64, edgeitems=2)
+-    params_list = list()
+-    this_line_length = offset
+-    line_sep = ',\n' + (1 + offset // 2) * ' '
+-    for i, (k, v) in enumerate(sorted(six.iteritems(params))):
+-        if type(v) is float:
+-            # use str for representing floating point numbers
+-            # this way we get consistent representation across
+-            # architectures and versions.
+-            this_repr = '%s=%s' % (k, str(v))
+-        else:
+-            # use repr of the rest
+-            this_repr = '%s=%s' % (k, printer(v))
+-        if len(this_repr) > 500:
+-            this_repr = this_repr[:300] + '...' + this_repr[-100:]
+-        if i > 0:
+-            if (this_line_length + len(this_repr) >= 75 or '\n' in this_repr):
+-                params_list.append(line_sep)
+-                this_line_length = len(line_sep)
+-            else:
+-                params_list.append(', ')
+-                this_line_length += 2
+-        params_list.append(this_repr)
+-        this_line_length += len(this_repr)
+-
+-    np.set_printoptions(**options)
+-    lines = ''.join(params_list)
+-    # Strip trailing space to avoid nightmare in doctests
+-    lines = '\n'.join(l.rstrip(' ') for l in lines.split('\n'))
+-    return lines
+-
+-
+-###############################################################################
+-class BaseEstimator(object):
+-    """Base class for all estimators in scikit-learn
+-
+-    Notes
+-    -----
+-    All estimators should specify all the parameters that can be set
+-    at the class level in their ``__init__`` as explicit keyword
+-    arguments (no ``*args`` or ``**kwargs``).
+-    """
+-
+-    @classmethod
+-    def _get_param_names(cls):
+-        """Get parameter names for the estimator"""
+-        # fetch the constructor or the original constructor before
+-        # deprecation wrapping if any
+-        init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
+-        if init is object.__init__:
+-            # No explicit constructor to introspect
+-            return []
+-
+-        # introspect the constructor arguments to find the model parameters
+-        # to represent
+-        init_signature = signature(init)
+-        # Consider the constructor parameters excluding 'self'
+-        parameters = [p for p in init_signature.parameters.values()
+-                      if p.name != 'self' and p.kind != p.VAR_KEYWORD]
+-        for p in parameters:
+-            if p.kind == p.VAR_POSITIONAL:
+-                raise RuntimeError("scikit-learn estimators should always "
+-                                   "specify their parameters in the signature"
+-                                   " of their __init__ (no varargs)."
+-                                   " %s with constructor %s doesn't "
+-                                   " follow this convention."
+-                                   % (cls, init_signature))
+-        # Extract and sort argument names excluding 'self'
+-        return sorted([p.name for p in parameters])
+-
+-    def get_params(self, deep=True):
+-        """Get parameters for this estimator.
+-
+-        Parameters
+-        ----------
+-        deep : boolean, optional
+-            If True, will return the parameters for this estimator and
+-            contained subobjects that are estimators.
+-
+-        Returns
+-        -------
+-        params : mapping of string to any
+-            Parameter names mapped to their values.
+-        """
+-        out = dict()
+-        for key in self._get_param_names():
+-            value = getattr(self, key, None)
+-            if deep and hasattr(value, 'get_params'):
+-                deep_items = value.get_params().items()
+-                out.update((key + '__' + k, val) for k, val in deep_items)
+-            out[key] = value
+-        return out
+-
+-    def set_params(self, **params):
+-        """Set the parameters of this estimator.
+-
+-        The method works on simple estimators as well as on nested objects
+-        (such as pipelines). The latter have parameters of the form
+-        ``<component>__<parameter>`` so that it's possible to update each
+-        component of a nested object.
+-        """
+-        if not params:
+-            # Simple optimization to gain speed (inspect is slow)
+-            return self
+-        valid_params = self.get_params(deep=True)
+-
+-        nested_params = defaultdict(dict)  # grouped by prefix
+-        for key, value in params.items():
+-            key, delim, sub_key = key.partition('__')
+-            if key not in valid_params:
+-                raise ValueError('Invalid parameter %s for estimator %s. '
+-                                 'Check the list of available parameters '
+-                                 'with `estimator.get_params().keys()`.' %
+-                                 (key, self))
+-
+-            if delim:
+-                nested_params[key][sub_key] = value
+-            else:
+-                setattr(self, key, value)
+-                valid_params[key] = value
+-
+-        for key, sub_params in nested_params.items():
+-            valid_params[key].set_params(**sub_params)
+-
+-        return self
+\ No newline at end of file

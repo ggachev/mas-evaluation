@@ -1,0 +1,87 @@
+--- a/query.py
++++ b/query.py
+@@ -846,7 +846,83 @@
+         relabelling any references to them in select columns and the where
+         clause.
+         """
+-        assert set(change_map).isdisjoint(change_map.values())
++        # The original implementation asserted that change_map keys are
++        # disjoint from its values. However, in some combine operations the
++        # mapping can contain chains (e.g. {'T4': 'T5', 'T5': 'T6'}). To
++        # support this, resolve mappings safely by ordering renames and
++        # introducing temporary aliases when cycles are detected.
++
++        # Work on a copy so callers don't see our temporary mutations.
++        cm = change_map.copy()
++
++        # Helper to generate a fresh alias name not used in the query.
++        def _generate_fresh_alias():
++            idx = len(self.alias_map) + 1
++            while True:
++                candidate = '%s%d' % (self.alias_prefix, idx)
++                idx += 1
++                if candidate not in self.alias_map and candidate not in cm and candidate not in change_map.values():
++                    return candidate
++
++        # Build an ordered list of rename operations that avoid conflicting
++        # intermediate states. We'll perform the actual relabelling in the
++        # same way as the original implementation but in a safe order.
++        ordered_changes = []
++        while cm:
++            progressed = False
++            keys = set(cm.keys())
++            for old_alias, new_alias in list(cm.items()):
++                # If the target isn't going to be renamed further, we can apply
++                # this rename now.
++                if new_alias not in keys:
++                    ordered_changes.append((old_alias, new_alias))
++                    del cm[old_alias]
++                    progressed = True
++            if not progressed:
++                # Cycle detected (e.g. a->b, b->a). Break it by moving one of
++                # the aliases to a fresh temporary alias first.
++                old_alias = next(iter(cm))
++                new_alias = cm[old_alias]
++                temp_alias = _generate_fresh_alias()
++                # Rename old_alias -> temp_alias first, then temp_alias -> new_alias
++                ordered_changes.append((old_alias, temp_alias))
++                # Replace mapping so that temp_alias will be renamed to new_alias
++                del cm[old_alias]
++                cm[temp_alias] = new_alias
++
++        # 1. Update references in "select" (normal columns plus aliases),
++        # "group by" and "where". Apply relabelling using the original
++        # change_map so transforms inside cloned structures are consistent.
++        self.where.relabel_aliases(change_map)
++        if isinstance(self.group_by, tuple):
++            self.group_by = tuple([col.relabeled_clone(change_map) for col in self.group_by])
++        self.select = tuple([col.relabeled_clone(change_map) for col in self.select])
++        self.annotations = self.annotations and {
++            key: col.relabeled_clone(change_map) for key, col in self.annotations.items()
++        }
++
++        # 2. Rename the alias in the internal table/alias datastructures.
++        for old_alias, new_alias in ordered_changes:
++            if old_alias not in self.alias_map:
++                continue
++            # Use relabeled_clone with the original change_map so that any
++            # internal references are updated consistently.
++            alias_data = self.alias_map[old_alias].relabeled_clone(change_map)
++            self.alias_map[new_alias] = alias_data
++            self.alias_refcount[new_alias] = self.alias_refcount[old_alias]
++            del self.alias_refcount[old_alias]
++            del self.alias_map[old_alias]
++
++            table_aliases = self.table_map[alias_data.table_name]
++            for pos, alias in enumerate(table_aliases):
++                if alias == old_alias:
++                    table_aliases[pos] = new_alias
++                    break
++        self.external_aliases = {
++            # Table is aliased or it's being changed and thus is aliased.
++            change_map.get(alias, alias): (aliased or alias in change_map)
++            for alias, aliased in self.external_aliases.items()
++        }
+ 
+     def bump_prefix(self, outer_query):
+         """

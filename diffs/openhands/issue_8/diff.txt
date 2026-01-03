@@ -1,0 +1,27 @@
+*** Begin Patch
+*** Update File: pylint/pylint/checkers/similar.py
+@@
+-        """compute similarities in appended files
+-
+-        If min_lines is set to 0 or less, disable the similarity check by
+-        returning an empty list. This matches the expectation that setting
+-        the option to 0 disables the check.
+-        """
+-        # Disable similarity check when configured with non-positive value
+-        if self.min_lines <= 0:
+-            return []
++        """compute similarities in appended files
++
++        If min_lines is set to 0 or less, disable the similarity check by
++        returning an empty list. This matches the expectation that setting
++        the option to 0 disables the check.
++        """
++        # Disable similarity check when configured with non-positive value.
++        # Historically the code treated 0 as a valid min_lines which caused the
++        # hashing logic to compute hashes of zero-length tuples and match every
++        # location against every other, producing spurious duplicates. Treating
++        # zero (and negative) as 'disabled' is consistent with other linters
++        # and user expectation: setting the option to 0 disables the check.
++        if self.min_lines <= 0:
++            return []
+*** End Patch

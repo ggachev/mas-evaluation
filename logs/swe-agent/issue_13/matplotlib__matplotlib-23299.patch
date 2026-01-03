@@ -1,0 +1,41 @@
+diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py
+index c268a56724..d22fd26115 100644
+--- a/lib/matplotlib/__init__.py
++++ b/lib/matplotlib/__init__.py
+@@ -1175,7 +1175,14 @@ def get_backend():
+     --------
+     matplotlib.use
+     """
+-    return rcParams['backend']
++    # Use the non-resolving accessor to avoid importing pyplot/switching
++    # backends as a side-effect (which previously could close all figures).
++    backend = rcParams._get_backend_or_none()
++    if backend is None:
++        # If the backend was not explicitly set, fall back to the original
++        # backend choice if available without triggering backend resolution.
++        return rcParamsOrig.get('backend', None)
++    return backend
+ 
+ 
+ def interactive(b):
+diff --git a/tmp/repro.py b/tmp/repro.py
+new file mode 100644
+index 0000000000..4282bf58ff
+--- /dev/null
++++ b/tmp/repro.py
+@@ -0,0 +1,15 @@
++import matplotlib.pyplot as plt
++from matplotlib import get_backend, rc_context
++
++# fig1 = plt.figure()  # <- UNCOMMENT THIS LINE AND IT WILL WORK
++# plt.ion()            # <- ALTERNATIVELY, UNCOMMENT THIS LINE AND IT WILL ALSO WORK
++with rc_context():
++    fig2 = plt.figure()
++before = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
++get_backend()
++after = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
++
++print('before:', before)
++print('after: ', after)
++assert before == after, '\n' + before + '\n' + after
++print('OK')
