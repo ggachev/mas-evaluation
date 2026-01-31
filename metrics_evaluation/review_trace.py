@@ -159,7 +159,7 @@ def main():
         print(f"Cost: ${trace.total_cost:.4f}")
         print("==========================\n")
         
-        input("Press Enter to start reading the steps...")
+       # input("Press Enter to start reading the steps...")
         
         for step in trace.steps:
             print_step(step)
