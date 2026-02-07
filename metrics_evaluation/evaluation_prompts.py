@@ -42,9 +42,10 @@ Evaluation Criteria:
    - If NO plan (explicit or implicit) exists -> score: null.
 
 2. Plan Adherence: Did the agent's subsequent actions follow this plan?
-   - HIGH (0.8-1.0): Followed plan closely, completed most steps in order, minor justified deviations.
-   - MEDIUM (0.4-0.7): General direction followed, but significant deviations, skipped steps, or got stuck in loops.
+   - HIGH (0.8-1.0): Followed plan closely, completed most steps in order, minor justified deviations. ONLY for explicit plans with near-flawless execution.
+   - MEDIUM (0.4-0.7): General direction followed, but significant deviations, skipped steps, tool failures, or got stuck in loops. NOTE: If the plan was only IMPLICIT (not explicitly stated with numbered steps), the maximum score is 0.7 (MEDIUM) even if execution was decent - because an implicit plan was never firmly committed to.
    - LOW (0.1-0.3): Plan abandoned, agent stuck in repetitive failures (e.g., 5+ identical tool errors without changing strategy), or completely diverged from the plan.
+   IMPORTANT: Any evidence of repeated tool failures (e.g., same edit command failing multiple times) or excessive steps for a simple task indicates MEDIUM adherence at best, not HIGH.
 
 3. Adaptive Planning: Deviations justified by NEW information (genuine error discovery -> new approach) score higher. Deviations from getting stuck in a loop, losing focus, or repeating the same failing action score lower.
 
