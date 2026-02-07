@@ -53,7 +53,7 @@ def get_agent_parser(agent_type: str):
     elif agent_type.lower() == "metagpt":
         from agent_parsers.metagpt_parser import parse_metagpt_trajectory
         return parse_metagpt_trajectory
-    elif agent_type.lower() in ("live-swe-agent", "live_swe_agent", "livesweagent", "mini-swe-agent"):
+    elif agent_type.lower() in ("live-swe-agent", "live_swe_agent", "livesweagent"):
         from agent_parsers.live_sweagent_parser import parse_live_sweagent_trajectory
         return parse_live_sweagent_trajectory
     else:

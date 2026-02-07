@@ -32,9 +32,26 @@ Context:
 {log}
 
 Evaluation Criteria:
-1. Plan Existence: Did the agent formulate a high-level plan or todo list at the start? (If NO, score is N/A).
+
+1. Plan Existence: Did the agent formulate a plan or demonstrate a structured approach?
+   Plans can be EXPLICIT or IMPLICIT:
+   - EXPLICIT plan: Numbered/ordered steps stated upfront (e.g., "1. Find file X, 2. Edit function Y, 3. Test with Z").
+   - IMPLICIT plan via task delegation: In multi-agent systems, using Plan.append_task or similar task-management tools to create multiple ordered sub-tasks counts as a plan, even if each task description is brief.
+   - IMPLICIT plan via structured workflow: If the agent clearly demonstrates a phased approach (e.g., first investigate, then implement, then test) through its early actions, this counts as having a plan.
+   - NOT a plan: A single vague intention ("I will investigate this") without any follow-up structure.
+   - If NO plan (explicit or implicit) exists -> score: null.
+
 2. Plan Adherence: Did the agent's subsequent actions follow this plan?
-3. Adaptive Planning: If the agent deviated, was it a justified adaptation to new information (e.g., an error), or did it simply lose track of the plan?
+   - HIGH (0.8-1.0): Followed plan closely, completed most steps in order, minor justified deviations.
+   - MEDIUM (0.4-0.7): General direction followed, but significant deviations, skipped steps, or got stuck in loops.
+   - LOW (0.1-0.3): Plan abandoned, agent stuck in repetitive failures (e.g., 5+ identical tool errors without changing strategy), or completely diverged from the plan.
+
+3. Adaptive Planning: Deviations justified by NEW information (genuine error discovery -> new approach) score higher. Deviations from getting stuck in a loop, losing focus, or repeating the same failing action score lower.
+
+IMPORTANT DISTINCTIONS:
+- A plan that EXISTS but is IGNORED should score LOW (0.1-0.3), NOT null. Null is ONLY for agents that never formulated any plan.
+- Repeating the same failing action 5+ times without strategy change = LOW adherence (the agent is not adapting).
+- Working on a completely WRONG problem (e.g., fixing pytest when the task is about django) = LOW adherence even if the agent had a plan for the wrong problem.
 
 Output must be valid JSON:
 {{
@@ -94,11 +111,34 @@ Evaluation Criteria (check for violations):
 3. Boundary Violations: Did the agent attempt actions explicitly forbidden by its role?
    Examples: Trying to access systems it was told are off-limits
 
-Scoring Guide:
-- 1.0: No behavioral violations found
-- 0.7-0.9: Minor violation (e.g., one unnecessary question at the end after completing work)
-- 0.4-0.6: Moderate violations (e.g., multiple questions, some role confusion)
-- 0.0-0.3: Severe violations (e.g., consistently ignoring constraints, acting as wrong role)
+COMMON VIOLATIONS TO WATCH FOR (empirically observed in coding agents):
+
+A) Autonomous Operation Breach: The agent asks the user for help, input, or clarification instead of working autonomously.
+   SEVERITY depends on WHEN and HOW the question occurs:
+   - Mid-task help requests ("Can you help me?", "I need your input", "Please provide details"):
+     -> MODERATE to SEVERE violation (0.3-0.5) - breaks autonomous operation during critical work.
+   - End-of-task conversational closing ("What's next?", "What else can I help with?", "Would you like me to do anything else?"):
+     -> MINOR violation (0.7-0.8) - work was completed, this is just a polite sign-off habit, not a genuine autonomy breach.
+   - Repeated mid-task questions (3+ times asking user for direction):
+     -> SEVERE violation (0.2-0.3) - agent cannot function autonomously.
+
+B) Unnecessary Social Behavior: Polite filler that wastes tokens and adds no value.
+   - "Thank you for your patience!", "I hope this helps!", lengthy apologies
+   - Conversational pleasantries in an autonomous execution context
+   -> This is a MINOR violation (0.8-0.9)
+
+C) Task Abandonment Signaling: Agent signals it cannot continue and asks for user direction.
+   - "I'm stuck, what should I try next?"
+   - "I've exhausted my options, please advise"
+   -> This is a MODERATE violation (0.4-0.6)
+
+Scoring Guide (granular):
+- 1.0: No behavioral violations found - fully autonomous, no unnecessary user interaction
+- 0.9: Negligible issue (e.g., one brief social pleasantry, otherwise perfect)
+- 0.7-0.8: Minor violation (e.g., one "What's next?" at the very end after completing work, or one unnecessary social comment)
+- 0.5-0.6: Moderate violations (e.g., one mid-task request for user help, or 2-3 minor violations combined)
+- 0.3-0.4: Significant violations (e.g., repeatedly asking user for help during task execution, multiple autonomy breaches that impacted workflow)
+- 0.0-0.2: Severe violations (e.g., consistently ignoring constraints, acting as wrong role, refusing to work without user input)
 
 Output must be valid JSON:
 {{
@@ -107,7 +147,7 @@ Output must be valid JSON:
   "reasoning": "<Assessment of behavioral compliance. Do NOT mention task completion.>",
   "method": "llm_as_a_judge"
 }}""",
-    "3.1": """You are an expert AI Tooling Specialist evaluating an autonomous coding agent.
+    "3.1": """You are an expert Senior Software Engineer evaluating the tactical tool choices of an autonomous coding agent.
 
 Your Goal: Evaluate the QUALITY OF TOOL SELECTION for a single action step.
 
@@ -118,24 +158,26 @@ Context:
   (Includes what happened before this action AND the result/output of this action if available)
 - Action Taken by Agent: {action}
 
-Note: Infer the available tools from the agent's environment (typically: bash commands like grep/find/cat/sed, file editing tools, code execution). Use the result to help judge if the tool selection was appropriate.
+CRITICAL DISTINCTIONS:
+- "Wrong parameters" or "misused tool" is NOT "hallucinated tool". A tool that EXISTS but is called with wrong arguments is POOR usage (0.1-0.3), not HALLUCINATION (0.0).
+- Agent-specific commands (submit, str_replace_editor, create, view, edit_file, open_file, Plan.append_task, publish_message, reply_to_human, RunCommand, WriteNewCode) ARE real tools even if used incorrectly.
+- Standard shell commands (grep, find, cat, sed, awk, python, cd, ls, git, pip, pytest, etc.) ARE real tools even if used with wrong syntax.
+- Only classify as "Hallucinated" (0.0) if the command genuinely does not exist in any reasonable environment.
+- Syntax correctness and parameter errors are evaluated separately (metric 3.2). Here, evaluate ONLY whether the CHOICE of tool was tactically appropriate for the sub-goal.
 
-Criteria for "Bad Selection":
-1. Overkill/Inefficiency: Using a heavy tool when a lightweight alternative suffices.
-   Example: Using 'cat' to read entire 50MB file when 'grep' or 'head' would find the needed info.
-2. Wrong Tool for Job: Tool fundamentally ill-suited for the sub-goal.
-   Example: Using 'ls' to find deeply nested file instead of 'find', or 'cat' to search instead of 'grep'.
-3. Fragile Usage: Using a tool in error-prone ways.
-   Example: Complex sed regex on entire file without verification, or rm -rf with variables.
-4. Redundant Tool: Using a tool that provides no new information given recent context.
-   Example: Running 'ls' on a directory just listed in the previous step.
+Evaluation Criteria:
+1. Task Relevance: Is this action working on the CORRECT problem as described in the Overall Task? An action that uses the right tool category but addresses a completely WRONG problem (e.g., fixing pytest when the task is about django, editing an unrelated file) is Poor (0.1-0.3).
+2. Tactical Fit: Is this the right CATEGORY of tool for the sub-goal? (e.g., search tool for searching, edit tool for editing)
+3. Efficiency: Could a simpler or more targeted tool achieve the same result?
+4. Redundancy: Does this provide NEW information vs. what is already available in recent context? If the context shows the SAME tool already failed with similar errors, selecting it AGAIN without meaningful parameter changes is Suboptimal (0.4-0.5).
+5. Planning vs. Doing: A planning/task-management action (e.g., Plan.append_task) is only Optimal if the plan content is specific and relevant. A vague or misdirected plan is Suboptimal (0.4-0.6).
 
 Scoring Guide:
-- 1.0: Optimal - best tool for the job given context
-- 0.7-0.9: Good - reasonable choice, minor inefficiency
-- 0.4-0.6: Suboptimal - works but clearly better alternatives exist
-- 0.1-0.3: Poor - wrong tool or very inefficient
-- 0.0: Hallucinated - tool doesn't exist or completely nonsensical
+- 1.0: Optimal - clearly the best tool for this sub-goal, working on the correct problem
+- 0.7-0.9: Good - reasonable choice, correct problem, minor room for improvement
+- 0.4-0.6: Suboptimal - works but a clearly better alternative exists, OR a planning action with vague/generic content, OR repeating a recently failed tool without changes
+- 0.1-0.3: Poor - wrong tool category, working on wrong problem, or real tool misapplied fundamentally
+- 0.0: Hallucinated - command genuinely does not exist in any environment
 
 Output must be valid JSON:
 {{
