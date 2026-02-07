@@ -29,6 +29,7 @@ Bewertet, ob ein erkennbarer Gesamtplan existiert und eingehalten wird.
 *   **1:** Kein Plan erkennbar, rein reaktives "Wursteln".
 *   **3:** Plan vorhanden, aber Agent verliert ihn zwischendurch aus den Augen oder passt ihn nicht an.
 *   **5:** Agent erstellt initialen Plan, arbeitet ihn ab und aktualisiert ihn sinnvoll bei neuen Erkenntnissen.
+*   **N/A / null:** Für rein reaktive Agenten (z.B. SWE-agent), die keinen expliziten Gesamtplan erstellen. Bitte `null` eintragen, oder Feld leer lassen, damit die Korrelation mit der automatischen Evaluierung (die ebenfalls `null` liefert) korrekt berechnet werden kann.
 
 ### M2.4 Reasoning Quality (Logische Schlüssigkeit)
 Bewertet die Qualität der `Thought` -> `Action` Kette. Macht der Schritt Sinn?
@@ -57,8 +58,13 @@ Bewertet, ob der Agent Informationen im Gedächtnis behält.
 *   **1:** Vergisst Dinge, die er 2 Schritte vorher gelesen hat. Liest dieselbe Datei 3-mal.
 *   **5:** Erinnert sich perfekt an alle Details, nutzt Wissen aus früheren Schritten effizient.
 
-### M5.1 Communication (Nur für Multi-Agent Systeme)
+---
+
+## Kategorie 5: Multi-Agenten-Metriken (MAS)
+*Hinweis:* Diese Metriken sind nur für Multi-Agenten-Systeme (z.B. MetaGPT, ChatDev) relevant.
+*   **Für Single-Agent Systeme (SWE-agent, OpenHands, Live-SWE-Agent):** Bitte trage hier konsequent **"N/A - Single Agent"** ein.
+
+### M5.1 Communication Efficiency
 Bewertet die Qualität der Kommunikation zwischen den Agenten.
 *   **1:** Sinnloses "Ping-Pong", leere Nachrichten, endloses Danke-Sagen.
 *   **5:** Hochdichte Informationsübertragung, klare Arbeitsverteilung, konstruktives Feedback.
-*   *Lasse dieses Feld leer für Single-Agent Systeme (SWE-agent, OpenHands).*
