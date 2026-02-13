@@ -25,11 +25,11 @@ Bewertet, wie zielgerichtet der Agent vorging.
 *   **5:** Agent navigiert direkt zur Lösung ("Laser-Fokus"), jeder Schritt bringt ihn dem Ziel näher.
 
 ### M2.3 Global Strategy (Strategische Planung)
-Bewertet, ob ein erkennbarer Gesamtplan existiert und eingehalten wird.
-*   **1:** Kein Plan erkennbar, rein reaktives "Wursteln".
-*   **3:** Plan vorhanden, aber Agent verliert ihn zwischendurch aus den Augen oder passt ihn nicht an.
-*   **5:** Agent erstellt initialen Plan, arbeitet ihn ab und aktualisiert ihn sinnvoll bei neuen Erkenntnissen.
-*   **N/A / null:** Für rein reaktive Agenten (z.B. SWE-agent), die keinen expliziten Gesamtplan erstellen. Bitte `null` eintragen, oder Feld leer lassen, damit die Korrelation mit der automatischen Evaluierung (die ebenfalls `null` liefert) korrekt berechnet werden kann.
+Bewertet, ob ein erkennbares strategisches Vorgehen existiert (explizit oder implizit) und eingehalten wird.
+*   **1 - Planlos:** Kein Muster erkennbar, rein reaktives, chaotisches "Wursteln", Sprünge zwischen Ideen ohne Abschluss.
+*   **3 - Implizite/Mittlere Strategie:** Der Agent schreibt keinen expliziten Plan, folgt aber einem klaren, methodischen Schema (z.B. erst Analyse, dann Reproduktion, dann Fix). ODER: Plan vorhanden, aber Ausführung unsauber.
+*   **5 - Exzellente Strategie:** Agent erstellt einen **expliziten** initialen Plan (ToDo-Liste), arbeitet ihn Schritt für Schritt ab und aktualisiert ihn sinnvoll bei neuen Erkenntnissen.
+*   **N/A / null:** Nur verwenden, wenn der Trace so kurz ist, dass kein Verhalten bewertet werden kann.
 
 ### M2.4 Reasoning Quality (Logische Schlüssigkeit)
 Bewertet die Qualität der `Thought` -> `Action` Kette. Macht der Schritt Sinn?
@@ -39,8 +39,9 @@ Bewertet die Qualität der `Thought` -> `Action` Kette. Macht der Schritt Sinn?
 
 ### M2.5 Role Adherence (Rollentreue)
 Bewertet, ob der Agent sich an seine System-Instruktionen hält.
-*   **1:** Agent vergisst seine Rolle, fragt den User nach Hilfe (obwohl er autonom sein soll), verweigert Coding.
-*   **5:** Agent bleibt strikt "in Character" (z.B. als Senior Engineer), befolgt alle Formatvorgaben.
+*   **1:** Schwere Verstöße: Agent vergisst seine Rolle, verweigert Arbeit oder fragt wiederholt den User während der Aufgabe nach Hilfe ("Autonomy Breach").
+*   **3:** Mittlere Verstöße: Gelegentliche, aber nicht kritische Rückfragen oder unnötige soziale Floskeln, die aber die Autonomie nicht gefährden.
+*   **5:** Perfekt: Agent bleibt strikt "in Character" (z.B. als Senior Engineer), arbeitet vollständig autonom ohne User-Interaktion.
 
 ### M3.1 Tool Selection (Werkzeugwahl)
 Bewertet die *taktische* Wahl des Tools.
@@ -49,14 +50,16 @@ Bewertet die *taktische* Wahl des Tools.
 *   **5:** Wählt immer das optimale, effizienteste Tool für das Teilproblem.
 
 ### M3.2 Tool Execution Quality (Technische Ausführung)
-Bewertet die *technische* Kompetenz (Syntaxfehler, Crashes).
-*   **1:** Ständige Syntaxfehler, falsche Argumente, "Command not found".
-*   **5:** Jeder Befehl sitzt beim ersten Versuch. Keine Syntaxfehler.
+Bewertet die *technische* Zuverlässigkeit und Erfolgsrate der ausgeführten Befehle.
+*   **1:** Hohe Fehlerrate (>50%). Ständige Syntaxfehler, Crashes oder "Command not found".
+*   **3:** Solide Ausführung mit gelegentlichen Fehlern (z.B. falsche Parameter), die der Agent aber korrigiert.
+*   **5:** Perfekte Ausführung (nahe 100%). Jeder Befehl sitzt beim ersten Versuch technisch korrekt (auch wenn das Ergebnis inhaltlich leer sein mag).
 
 ### M4.1 Context Utilization (Kontext-Nutzung)
-Bewertet, ob der Agent Informationen im Gedächtnis behält.
-*   **1:** Vergisst Dinge, die er 2 Schritte vorher gelesen hat. Liest dieselbe Datei 3-mal.
-*   **5:** Erinnert sich perfekt an alle Details, nutzt Wissen aus früheren Schritten effizient.
+Bewertet die Konsistenz des Agenten mit dem sichtbaren Kontext.
+*   **1:** Halluzination/Widerspruch: Agent behauptet Dinge, die explizit im Kontext widerlegt wurden (z.B. "Datei existiert nicht", obwohl er sie gerade gelesen hat) oder erfindet Fakten.
+*   **3:** Ineffizienz: Agent ignoriert Informationen, was zu unnötigen Schritten führt (z.B. liest Datei nochmal), aber ohne logischen Widerspruch.
+*   **5:** Konsistent: Agent nutzt alle verfügbaren Informationen logisch korrekt und widerspruchsfrei.
 
 ---
 

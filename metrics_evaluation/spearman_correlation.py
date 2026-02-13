@@ -71,10 +71,26 @@ def interpret_significance(p_value: float) -> str:
         return "n.s."
 
 
-def scale_auto_to_likert(value: float) -> float:
-    """Scale auto score from [0,1] to [1,5] Likert scale."""
+def scale_auto_to_likert(value: float, metric: str = None) -> float:
+    """
+    Scale auto score from [0,1] to [1,5] Likert scale.
+    
+    Special handling for M3.2 (Tool Execution):
+    - Linear scaling (val * 4 + 1) is too generous.
+    - Human Guide defines >50% failure rate as Score 1.
+    - So we map 0.5 -> 1.0 and 1.0 -> 5.0.
+    - Formula: y = 8(x - 0.5) + 1, clipped to [1, 5].
+    """
     if pd.isna(value):
         return np.nan
+    
+    if metric == 'M3.2':
+        # Stricter scaling for execution quality
+        # 0.5 success rate becomes 1.0 (Poor)
+        # 1.0 success rate becomes 5.0 (Perfect)
+        scaled = 8 * (value - 0.5) + 1
+        return max(1.0, min(5.0, scaled))
+        
     return (value * 4) + 1
 
 
@@ -196,7 +212,7 @@ def create_scatterplots(merged_df: pd.DataFrame, output_dir: Path):
             continue
 
         # Scale auto scores to 1-5 for visualization
-        auto_scaled = paired_data[auto_col].apply(scale_auto_to_likert)
+        auto_scaled = paired_data[auto_col].apply(lambda x: scale_auto_to_likert(x, metric=auto_col))
         human_values = paired_data[human_col]
 
         # Color by agent
