@@ -86,7 +86,9 @@ def run_batch_evaluation(
     context_window_steps: int = 8,
     context_sample_rate: int = 4,
     start_from: int = 1,
-    only_issue: int = None
+    only_issue: int = None,
+    global_plan: bool = False,
+    prompts_file: str = None
 ):
     """
     Run evaluation for all trajectory files in the logs directory.
@@ -97,9 +99,12 @@ def run_batch_evaluation(
     print(f"Logs directory: {logs_dir}")
     print(f"Agent: {agent}")
     print(f"MAS mode: {mas}")
+    print(f"Global plan (M2.3): {global_plan}")
     print(f"Sample rate (3.1/3.2): {sample_rate}")
     print(f"Context window (4.1): {context_window_steps} steps")
     print(f"Context sample rate (4.1): every {context_sample_rate}th step")
+    if prompts_file:
+        print(f"Prompts file: {prompts_file}")
     print(f"{'='*60}\n")
 
     # Find all trajectory files
@@ -148,7 +153,9 @@ def run_batch_evaluation(
                 force_mas_arg=mas,
                 sample_rate=sample_rate,
                 context_window_steps=context_window_steps,
-                context_sample_rate=context_sample_rate
+                context_sample_rate=context_sample_rate,
+                global_plan=global_plan,
+                prompts_file=prompts_file
             )
             successful += 1
             print(f"\n✓ Completed {issue_folder}")
@@ -207,6 +214,10 @@ Examples:
     # Optional arguments (matching metrics_evaluation.py)
     parser.add_argument("--mas", action="store_true",
                         help="Force MAS (Multi-Agent System) evaluation")
+    parser.add_argument("--global-plan", action="store_true",
+                        help="Enable M2.3 Global Strategy Consistency evaluation (only for agents that create explicit plans)")
+    parser.add_argument("--prompts-file", type=str, default=None,
+                        help="Path to custom prompts Python file (must define PROMPTS dict)")
     parser.add_argument("--sample-rate", type=int, default=5,
                         help="Sample rate for metrics 3.1 and 3.2 (default: 5)")
     parser.add_argument("--context-window-steps", type=int, default=8,
@@ -230,5 +241,7 @@ Examples:
         context_window_steps=args.context_window_steps,
         context_sample_rate=args.context_sample_rate,
         start_from=args.start_from,
-        only_issue=args.only_issue
+        only_issue=args.only_issue,
+        global_plan=args.global_plan,
+        prompts_file=args.prompts_file
     )

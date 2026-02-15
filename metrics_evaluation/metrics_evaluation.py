@@ -1,5 +1,6 @@
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import datetime
@@ -27,20 +28,30 @@ except ImportError:
 
 # Eigene Module importieren
 from evaluation_data_models import StandardStep, EvaluationTrace
-from evaluation_prompts import PROMPTS
+
+def load_prompts(prompts_file: str = None) -> dict:
+    """Load PROMPTS dict from a Python file. Falls back to default evaluation_prompts.py."""
+    if prompts_file:
+        spec = importlib.util.spec_from_file_location("custom_prompts", prompts_file)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.PROMPTS
+    # Default: import from same package
+    from evaluation_prompts import PROMPTS as default_prompts
+    return default_prompts
 
 # --- KONFIGURATION ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "evaluation_results")
 # LABELS_FILE is now constructed dynamically based on agent type in main()
 
-BASE_URL_JUDGE = "https://api.helmholtz-blablador.fz-juelich.de/v1"
-MODEL_JUDGE = "1 - GPT-OSS-120b - an open model released by OpenAI in August 2025"
+BASE_URL_JUDGE = "http://91.99.56.205:4000/v1"
+MODEL_JUDGE = "gpt-4o-mini"
 MODEL_EMBEDDING = "text-embedding-3-small"
 
 # Context window size for efficiency calculations (tokens)
 # Adjust based on the agent's actual LLM context window
-CONTEXT_WINDOW_SIZE = 131000
+CONTEXT_WINDOW_SIZE = 128000
 
 # --- HELFERFUNKTIONEN ---
 def get_agent_parser(agent_type: str):
@@ -363,7 +374,7 @@ def extract_inter_agent_communication(trace: EvaluationTrace, max_chars: int = 1
     return formatted_log, len(messages), sorted(list(agents_involved))
 
 
-def calculate_metric_5_1_communication_efficiency(trace: EvaluationTrace, client, task_desc: str):
+def calculate_metric_5_1_communication_efficiency(trace: EvaluationTrace, client, task_desc: str, prompts: dict = None):
     """
     Metric 5.1: Multi-Agent Communication Efficiency
 
@@ -392,7 +403,7 @@ def calculate_metric_5_1_communication_efficiency(trace: EvaluationTrace, client
         }
 
     # Build prompt with extracted communication
-    prompt = PROMPTS["5.1"].format(
+    prompt = prompts["5.1"].format(
         task=task_desc,
         communication_log=communication_log
     )
@@ -1187,9 +1198,14 @@ def calculate_metric_5_4_agent_invocation(trace: EvaluationTrace):
 
 
 # --- MAIN ---
-def main(file_path, agent_type_arg, force_mas_arg, sample_rate: int = 5, context_window_steps: int = 8, context_sample_rate: int = 4):
+def main(file_path, agent_type_arg, force_mas_arg, sample_rate: int = 5, context_window_steps: int = 8, context_sample_rate: int = 4, global_plan: bool = False, prompts_file: str = None):
     global API_CALL_LOGS
     API_CALL_LOGS = []  # Clear logs for each run
+
+    # Load prompts (custom file or default)
+    PROMPTS = load_prompts(prompts_file)
+    if prompts_file:
+        print(f"Prompts loaded from: {prompts_file}")
     print(f"\n{'='*60}")
     print(f"METRICS EVALUATION")
     print(f"{'='*60}")
@@ -1259,12 +1275,15 @@ def main(file_path, agent_type_arg, force_mas_arg, sample_rate: int = 5, context
 
     # Metrik 2.3: Global Strategy Consistency (Judge)
     # Use specialized function: first 5 steps full detail (2500 chars), then remaining steps with normal pruning
-    if client:
-        print("Running 2.3 Global Strategy Consistency (LLM)...")
-        strategy_trace = get_trace_for_strategy(trace)
-        results["metric_2_3_global_strategy_consistency"] = call_judge(client, PROMPTS["2.3"].format(task=task_desc, log=strategy_trace), metric_name="metric_2.3_global_strategy_consistency")
+    if global_plan:
+        if client:
+            print("Running 2.3 Global Strategy Consistency (LLM)...")
+            strategy_trace = get_trace_for_strategy(trace)
+            results["metric_2_3_global_strategy_consistency"] = call_judge(client, PROMPTS["2.3"].format(task=task_desc, log=strategy_trace), metric_name="metric_2.3_global_strategy_consistency")
+        else:
+            results["metric_2_3_global_strategy_consistency"] = "Skipped (No LLM Client)"
     else:
-        results["metric_2_3_global_strategy_consistency"] = "Skipped (No LLM Client)"
+        results["metric_2_3_global_strategy_consistency"] = "Skipped (--global-plan not set)"
 
     # Metrik 2.4: Stepwise Reasoning Quality (Judge - Batched, ~15 steps per call)
     if client:
@@ -1651,7 +1670,7 @@ def main(file_path, agent_type_arg, force_mas_arg, sample_rate: int = 5, context
     # Metrik 5.1: Communication Efficiency (Judge - MAS only)
     if trace.is_multi_agent:
         print("Running 5.1 Communication Efficiency (LLM - MAS only)...")
-    results["metric_5_1_communication_efficiency"] = calculate_metric_5_1_communication_efficiency(trace, client, task_desc)
+    results["metric_5_1_communication_efficiency"] = calculate_metric_5_1_communication_efficiency(trace, client, task_desc, PROMPTS)
 
     # Metrik 5.2: Information Diversity (Deterministisch - Embeddings - MAS only)
     results["metric_5_2_information_diversity"] = calculate_metric_5_2_information_diversity(trace, client)
@@ -1690,5 +1709,7 @@ if __name__ == "__main__":
     parser.add_argument("--sample-rate", type=int, default=5, help="Sample rate for metrics 3.1 and 3.2 (evaluate every Nth action, default: 5)")
     parser.add_argument("--context-window-steps", type=int, default=8, help="Sliding window size for metric 4.1 (number of steps to include, default: 8)")
     parser.add_argument("--context-sample-rate", type=int, default=4, help="Sample rate for metric 4.1 (evaluate every Nth step, default: 4)")
+    parser.add_argument("--global-plan", action="store_true", help="Enable M2.3 Global Strategy Consistency evaluation (only for agents that create explicit plans)")
+    parser.add_argument("--prompts-file", type=str, default=None, help="Path to custom prompts Python file (must define PROMPTS dict)")
     args = parser.parse_args()
-    main(args.file_path, args.agent, args.mas, args.sample_rate, args.context_window_steps, args.context_sample_rate)
+    main(args.file_path, args.agent, args.mas, args.sample_rate, args.context_window_steps, args.context_sample_rate, args.global_plan, args.prompts_file)
