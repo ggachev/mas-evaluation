@@ -45,13 +45,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "evaluation_results")
 # LABELS_FILE is now constructed dynamically based on agent type in main()
 
-BASE_URL_JUDGE = "http://91.99.56.205:4000/v1"
-MODEL_JUDGE = "gpt-4o-mini"
+BASE_URL_JUDGE = "https://api.helmholtz-blablador.fz-juelich.de/v1"
+MODEL_JUDGE = "2 - Qwen3 235, a great model from Alibaba with a long context size"
 MODEL_EMBEDDING = "text-embedding-3-small"
 
 # Context window size for efficiency calculations (tokens)
 # Adjust based on the agent's actual LLM context window
-CONTEXT_WINDOW_SIZE = 128000
+CONTEXT_WINDOW_SIZE = 204000
 
 # --- HELFERFUNKTIONEN ---
 def get_agent_parser(agent_type: str):
