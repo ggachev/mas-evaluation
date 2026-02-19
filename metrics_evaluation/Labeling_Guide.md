@@ -16,7 +16,7 @@ Dieses Dokument dient als Leitfaden für die manuelle Bewertung ("Gold Standard"
 ### M1.1 Success (Bool)
 *   **0 (Nein):** Task nicht gelöst (Tests fail).
 *   **1 (Ja):** Task gelöst (Tests pass).
-*   *Hinweis:* Dies ist meist objektiv aus den Logs (`pytest` output) ersichtlich.
+*   *Hinweis:* Dies ist meist objektiv aus den Logs (nach der SWE Bench Evaluation Harness) ersichtlich.
 
 ### M2.2 Trajectory Efficiency (Effizienz des Lösungsweges)
 Bewertet, wie zielgerichtet der Agent vorging.
