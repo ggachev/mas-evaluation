@@ -50,6 +50,28 @@ RESOURCE_METRICS = ['M1.2_cost_usd', 'M1.2_tokens', 'M1.2_duration_s', 'M1.2_ste
 # MAS-exklusive Metriken
 MAS_METRICS = ['M5.1', 'M5.2', 'M5.3', 'M5.4']
 
+# Aufgabenschwierigkeit (validierter 9-4-2 Split)
+TASK_DIFFICULTY = {
+    'scikit-learn__scikit-learn-12585': 'easy',
+    'pallets__flask-5014':              'easy',
+    'psf__requests-2317':               'easy',
+    'matplotlib__matplotlib-22719':     'easy',
+    'django__django-11099':             'easy',
+    'sympy__sympy-13480':               'easy',
+    'matplotlib__matplotlib-20676':     'easy',
+    'pylint-dev__pylint-4970':          'easy',
+    'pytest-dev__pytest-5262':          'easy',
+    'django__django-16901':             'medium',
+    'scikit-learn__scikit-learn-10297': 'medium',
+    'sympy__sympy-20801':               'medium',
+    'matplotlib__matplotlib-23299':     'medium',
+    'django__django-15128':             'hard',
+    'sympy__sympy-18199':               'hard',
+}
+DIFFICULTY_ORDER = {'easy': 0, 'medium': 1, 'hard': 2}
+DIFFICULTY_BG    = {'easy': '#eaf7ec', 'medium': '#fefbe6', 'hard': '#fdecea'}
+DIFFICULTY_LABEL = {'easy': 'Leicht (9)',  'medium': 'Mittel (4)', 'hard': 'Schwer (2)'}
+
 # Metrik-Beschriftungen (Metriknamen bleiben auf Englisch)
 METRIC_LABELS = {
     'M1.1':          'M1.1 Task\nSuccess Rate',
@@ -459,25 +481,47 @@ def create_cost_benefit_chart(df: pd.DataFrame, output_dir: Path) -> None:
 # ── 7. Multi-Agenten-Metriken ──────────────────────────────────────────────
 
 def create_mas_chart(df: pd.DataFrame, output_dir: Path) -> None:
-    """Balkendiagramm der MetaGPT MAS-Metriken (M5.1–M5.4) je Aufgabe."""
-    metagpt = df[df['agent_name'] == 'MetaGPT']
+    """Balkendiagramm der MetaGPT MAS-Metriken (M5.1–M5.4) je Aufgabe,
+    sortiert nach Aufgabenschwierigkeit (easy → medium → hard)."""
+    metagpt = df[df['agent_name'] == 'MetaGPT'].copy()
     if len(metagpt) == 0:
         print("  Keine MetaGPT-Daten gefunden.")
         return
 
-    fig, axes = plt.subplots(1, 4, figsize=(18, 5))
+    # Nach Schwierigkeit sortieren
+    metagpt['_diff_order'] = (
+        metagpt['issue_name'].map(TASK_DIFFICULTY)
+        .map(DIFFICULTY_ORDER)
+        .fillna(0)
+    )
+    metagpt = metagpt.sort_values('_diff_order').reset_index(drop=True)
+
+    fig, axes = plt.subplots(1, 4, figsize=(18, 6))
 
     for ax, metric in zip(axes, MAS_METRICS):
-        vals   = metagpt[metric].dropna().values
-        issues = metagpt.loc[metagpt[metric].notna(), 'issue_name'].values
+        mask   = metagpt[metric].notna()
+        vals   = metagpt.loc[mask, metric].values
+        issues = metagpt.loc[mask, 'issue_name'].values
+        diffs  = metagpt.loc[mask, 'issue_name'].map(TASK_DIFFICULTY).fillna('easy').values
+
         short_issues = [
             i.split('__')[1].replace('-', '\n', 1) if '__' in i else i
             for i in issues
         ]
-        colors = ['#2ca02c' if v >= 0.6 else ('#ff7f0e' if v >= 0.4 else '#d62728')
-                  for v in vals]
+        bar_colors = ['#2ca02c' if v >= 0.6 else ('#ff7f0e' if v >= 0.4 else '#d62728')
+                      for v in vals]
 
-        ax.barh(range(len(vals)), vals, color=colors, edgecolor='black', alpha=0.8)
+        # Hintergrundbänder je Schwierigkeitsgruppe
+        y = 0
+        for diff in ['easy', 'medium', 'hard']:
+            count = int((diffs == diff).sum())
+            if count > 0:
+                ax.axhspan(y - 0.5, y + count - 0.5,
+                           color=DIFFICULTY_BG[diff], alpha=1.0, zorder=0)
+                y += count
+
+        ax.barh(range(len(vals)), vals, color=bar_colors,
+                edgecolor='black', alpha=0.85, zorder=2)
         ax.set_yticks(range(len(vals)))
         ax.set_yticklabels(short_issues, fontsize=7)
         ax.set_xlim(0, 1.05)
@@ -489,11 +533,21 @@ def create_mas_chart(df: pd.DataFrame, output_dir: Path) -> None:
         ax.axvline(x=mean_val, color='black', linestyle='--', linewidth=1.5,
                    label=f'Mittelwert: {german_fmt(mean_val)}')
         ax.legend(fontsize=8)
-        ax.grid(axis='x', alpha=0.3)
+        ax.grid(axis='x', alpha=0.3, zorder=1)
         ax.invert_yaxis()
         ax.xaxis.set_major_formatter(german_axis_formatter(1))
 
-    plt.tight_layout()
+    # Gemeinsame Legende für Schwierigkeitsgrad
+    from matplotlib.patches import Patch
+    diff_handles = [
+        Patch(facecolor=DIFFICULTY_BG[d], edgecolor='gray', label=DIFFICULTY_LABEL[d])
+        for d in ['easy', 'medium', 'hard']
+    ]
+    fig.legend(handles=diff_handles, loc='lower center', ncol=3,
+               bbox_to_anchor=(0.5, -0.02), fontsize=9, frameon=True,
+               title='Aufgabenschwierigkeit')
+
+    plt.tight_layout(rect=[0, 0.06, 1, 1])
     save_fig(fig, output_dir, 'mas_metrics_detail')
     plt.close()
 
