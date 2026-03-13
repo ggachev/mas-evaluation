@@ -604,7 +604,7 @@ def create_metric_correlation_matrix(df: pd.DataFrame, output_dir: Path) -> None
     ax.set_yticks(range(n))
     ax.set_yticklabels(labels, fontsize=8)
     cbar = plt.colorbar(im, ax=ax, shrink=0.85)
-    cbar.set_label('Spearman-Korrelationskoeffizient ρ', fontsize=10)
+    cbar.set_label(r'Spearman-Korrelationskoeffizient $\rho$', fontsize=10)
     cbar.set_ticks([-1.0, -0.5, 0.0, 0.5, 1.0])
     cbar.set_ticklabels(['-1,0', '-0,5', '0,0', '0,5', '1,0'])
 

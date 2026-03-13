@@ -375,24 +375,26 @@ def create_spearman_comparison_chart(comparison_df: pd.DataFrame, output_dir: Pa
         x = np.arange(len(metrics))
         width = 0.35
 
-        ax.bar(x - width / 2, rho_default, width, label='default (SR=5)', color='#1f77b4', alpha=0.8, edgecolor='black')
-        ax.bar(x + width / 2, rho_1step, width, label='1_step (SR=1)', color='#ff7f0e', alpha=0.8, edgecolor='black')
+        ax.bar(x - width / 2, rho_1step, width, label='Standard (SR=1)', color='#1f77b4', alpha=0.8, edgecolor='black')
+        ax.bar(x + width / 2, rho_default, width, label='Reduziert (SR=5)', color='#ff7f0e', alpha=0.8, edgecolor='black')
 
         ax.set_xticks(x)
         ax.set_xticklabels(metrics, fontsize=9, rotation=45, ha='right')
         ax.set_title(llm, fontsize=12, fontweight='bold')
-        ax.set_ylabel('Spearman rho (vs Human)' if ax == axes[0] else '', fontsize=10)
+        ax.set_ylabel('Spearman rho (vs. Mensch)' if ax == axes[0] else '', fontsize=10)
         ax.axhline(y=0.6, color='green', linestyle='--', alpha=0.4)
         ax.axhline(y=0.4, color='orange', linestyle='--', alpha=0.4)
         ax.set_ylim(-0.5, 1.05)
         ax.legend(fontsize=8)
         ax.grid(axis='y', alpha=0.3)
 
-    plt.suptitle('Spearman rho (vs Human): default vs 1_step per LLM', fontsize=14, y=1.02)
     plt.tight_layout()
     plt.savefig(output_dir / 'spearman_sample_rate_comparison.png', dpi=150, bbox_inches='tight')
-    plt.savefig(output_dir / 'spearman_sample_rate_comparison.pdf', bbox_inches='tight')
-    print(f"Spearman comparison chart saved to {output_dir / 'spearman_sample_rate_comparison.png'}")
+    try:
+        plt.savefig(output_dir / 'spearman_sample_rate_comparison.pgf', bbox_inches='tight')
+        print(f"Spearman comparison chart saved to {output_dir / 'spearman_sample_rate_comparison.png'} + .pgf")
+    except Exception as e:
+        print(f"Spearman comparison chart saved to {output_dir / 'spearman_sample_rate_comparison.png'}  (PGF fehlgeschlagen: {e})")
     plt.close()
 
 
@@ -426,9 +428,8 @@ def create_cross_model_barchart(cross_df: pd.DataFrame, config_label: str, outpu
 
     ax.set_xticks(x + width)
     ax.set_xticklabels([f'{m}\n({METRIC_DESCRIPTIONS.get(m, "")})' for m in metrics],
-                       fontsize=8, ha='center')
+                       fontsize=8, rotation=30, ha='right')
     ax.set_ylabel('Weighted Kappa (quadratic)', fontsize=11)
-    ax.set_title(f'Cross-Model Agreement: Weighted Kappa ({config_label})', fontsize=13)
     ax.legend(title='LLM Pair', fontsize=8)
     ax.axhline(y=0.6, color='green', linestyle='--', alpha=0.4)
     ax.axhline(y=0.4, color='orange', linestyle='--', alpha=0.4)
@@ -439,7 +440,11 @@ def create_cross_model_barchart(cross_df: pd.DataFrame, config_label: str, outpu
     fname = f'kappa_cross_model_{config_label.lower().replace(" ", "_")}'
     plt.savefig(output_dir / f'{fname}.png', dpi=150, bbox_inches='tight')
     plt.savefig(output_dir / f'{fname}.pdf', bbox_inches='tight')
-    print(f"Cross-model chart saved to {output_dir / fname}.png")
+    try:
+        plt.savefig(output_dir / f'{fname}.pgf', format='pgf', bbox_inches='tight')
+        print(f"Cross-model chart saved to {output_dir / fname}.png + .pgf")
+    except Exception as e:
+        print(f"Cross-model chart saved to {output_dir / fname}.png  (PGF fehlgeschlagen: {e})")
     plt.close()
 
 
