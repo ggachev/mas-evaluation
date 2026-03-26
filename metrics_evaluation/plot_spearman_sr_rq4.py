@@ -50,7 +50,7 @@ def annotate_bars(ax, bars, sigs):
             ax.annotate(
                 s,
                 xy=(bar.get_x() + bar.get_width() / 2, y),
-                ha='center', va='bottom', fontsize=9, fontweight='bold',
+                ha='center', va='bottom', fontsize=13, fontweight='bold',
             )
 
 
@@ -66,7 +66,7 @@ def main():
     x     = np.arange(len(METRICS))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(11, 6))
+    fig, ax = plt.subplots(figsize=(13, 7))
 
     bars1 = ax.bar(
         x - width / 2, vals_sr1, width,
@@ -81,31 +81,35 @@ def main():
     annotate_bars(ax, bars2, sigs_sr5)
 
     ax.set_xticks(x)
-    ax.set_xticklabels([METRIC_LABELS[m] for m in METRICS], fontsize=9)
-    ax.set_ylabel('Spearman rho (vs. manueller Gold Standard)', fontsize=11)
+    ax.set_xticklabels([METRIC_LABELS[m] for m in METRICS], fontsize=12)
+    ax.set_ylabel('Spearman rho (vs. manueller Gold Standard)', fontsize=13)
     ax.axhline(y=0.6, color='green',  linestyle='--', alpha=0.5, linewidth=1.2,
                label='Stark (0,60)')
     ax.axhline(y=0.4, color='orange', linestyle='--', alpha=0.5, linewidth=1.2,
                label='Moderat (0,40)')
     ax.axhline(y=0.0, color='black',  linestyle='-',  alpha=0.25, linewidth=0.8)
     ax.set_ylim(-0.35, 1.05)
+    ax.tick_params(axis='y', labelsize=12)
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(
         lambda val, _: f'{val:.1f}'.replace('.', ',')
     ))
-    ax.legend(fontsize=9, loc='upper right')
+    ax.legend(fontsize=12, loc='upper right')
     ax.grid(axis='y', alpha=0.3)
 
     plt.tight_layout()
 
-    png_path = OUTPUT_DIR / 'spearman_sr_rq4.png'
-    pgf_path = OUTPUT_DIR / 'spearman_sr_rq4.pgf'
-
-    fig.savefig(png_path, dpi=150, bbox_inches='tight')
+    name = 'spearman_sr_rq4'
+    fig.savefig(OUTPUT_DIR / f'{name}.png', dpi=150, bbox_inches='tight')
+    fig.savefig(OUTPUT_DIR / f'{name}.pdf', bbox_inches='tight')
+    (OUTPUT_DIR / f'{name}.tex').write_text(
+        r'\includegraphics[width=\linewidth]{' + name + r'.pdf}' + '\n',
+        encoding='utf-8',
+    )
     try:
-        fig.savefig(pgf_path, bbox_inches='tight')
-        print(f"Gespeichert: {png_path.name} + {pgf_path.name}")
+        fig.savefig(OUTPUT_DIR / f'{name}.pgf', bbox_inches='tight')
+        print(f"Gespeichert: {name}.png + .pdf + .pgf + .tex")
     except Exception as e:
-        print(f"Gespeichert: {png_path.name}  (PGF fehlgeschlagen: {e})")
+        print(f"Gespeichert: {name}.png + .pdf + .tex  (PGF fehlgeschlagen: {e})")
 
     plt.close()
 

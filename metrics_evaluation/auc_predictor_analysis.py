@@ -70,16 +70,22 @@ def german_fmt(val: float, digits: int = 2) -> str:
 
 
 def save_fig(fig: plt.Figure, output_dir: Path, name: str) -> None:
-    """Speichert eine Figure als PNG und PGF (für LaTeX: \\input{name.pgf})."""
+    """Speichert eine Figure als PNG, PDF, TEX und PGF."""
     png_path = output_dir / f'{name}.png'
+    pdf_path = output_dir / f'{name}.pdf'
     pgf_path = output_dir / f'{name}.pgf'
+    tex_path = output_dir / f'{name}.tex'
     fig.savefig(png_path, dpi=150, bbox_inches='tight')
+    fig.savefig(pdf_path, bbox_inches='tight')
+    tex_path.write_text(
+        r'\includegraphics[width=\linewidth]{' + name + r'.pdf}' + '\n',
+        encoding='utf-8',
+    )
     try:
-        # format='pgf' erzeugt die PGF-Textdatei ohne pdflatex-Aufruf
         fig.savefig(pgf_path, format='pgf', bbox_inches='tight')
-        print(f"  Gespeichert: {png_path.name} + {pgf_path.name}")
+        print(f"  Gespeichert: {png_path.name} + {pdf_path.name} + {pgf_path.name} + {tex_path.name}")
     except Exception as e:
-        print(f"  Gespeichert: {png_path.name}  (PGF fehlgeschlagen: {e})")
+        print(f"  Gespeichert: {png_path.name} + {pdf_path.name} + {tex_path.name}  (PGF fehlgeschlagen: {e})")
 
 
 def bootstrap_auc_ci(
@@ -217,7 +223,7 @@ def plot_auc_barchart(auc_df: pd.DataFrame, output_dir: Path) -> None:
     }
     colors = [color_map.get(lbl, '#aec7e8') for lbl in labels]
 
-    fig, ax = plt.subplots(figsize=(8, 4.5))
+    fig, ax = plt.subplots(figsize=(10, 5.5))
     y_pos = list(range(len(labels)))
 
     ax.barh(
@@ -235,16 +241,17 @@ def plot_auc_barchart(auc_df: pd.DataFrame, output_dir: Path) -> None:
 
     # Zahlenwerte rechts hinter dem CI-Oberende platzieren
     for i, (auc, hi) in enumerate(zip(aucs, ci_hi)):
-        ax.text(hi + 0.018, i, german_fmt(auc, 2), va='center', fontsize=10)
+        ax.text(hi + 0.018, i, german_fmt(auc, 2), va='center', fontsize=13)
 
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(labels, fontsize=10)
-    ax.set_xlabel('AUC (95-%-KI via Bootstrap, n = 1 000)', fontsize=11)
-    ax.set_xlim(0.25, 0.98)
+    ax.set_yticklabels(labels, fontsize=13)
+    ax.set_xlabel('AUC (95-%-KI via Bootstrap, n = 1 000)', fontsize=13)
+    ax.tick_params(axis='x', labelsize=12)
+    ax.set_xlim(0.25, 1.02)
     ax.xaxis.set_major_formatter(
         mticker.FuncFormatter(lambda x, _: german_fmt(x, 2))
     )
-    ax.legend(fontsize=9, loc='lower right')
+    ax.legend(fontsize=10, loc='lower right')
     ax.invert_yaxis()
 
     plt.tight_layout()

@@ -403,7 +403,7 @@ def create_cross_model_barchart(cross_df: pd.DataFrame, config_label: str, outpu
     pairs = cross_df['Pair'].unique()
     metrics = [m for m in LLM_METRICS if m in cross_df['Metric'].values]
 
-    fig, ax = plt.subplots(figsize=(14, 6))
+    fig, ax = plt.subplots(figsize=(16, 7))
 
     x = np.arange(len(metrics))
     width = 0.25
@@ -424,13 +424,14 @@ def create_cross_model_barchart(cross_df: pd.DataFrame, config_label: str, outpu
                 ax.annotate(f'{k:.2f}',
                             xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
                             xytext=(0, 3), textcoords="offset points",
-                            ha='center', va='bottom', fontsize=8, fontweight='bold')
+                            ha='center', va='bottom', fontsize=11, fontweight='bold')
 
     ax.set_xticks(x + width)
     ax.set_xticklabels([f'{m}\n({METRIC_DESCRIPTIONS.get(m, "")})' for m in metrics],
-                       fontsize=8, rotation=30, ha='right')
-    ax.set_ylabel('Weighted Kappa (quadratic)', fontsize=11)
-    ax.legend(title='LLM Pair', fontsize=8)
+                       fontsize=12, rotation=30, ha='right')
+    ax.set_ylabel('Weighted Kappa (quadratic)', fontsize=13)
+    ax.tick_params(axis='y', labelsize=12)
+    ax.legend(title='LLM Pair', fontsize=11, title_fontsize=12)
     ax.axhline(y=0.6, color='green', linestyle='--', alpha=0.4)
     ax.axhline(y=0.4, color='orange', linestyle='--', alpha=0.4)
     ax.set_ylim(-0.3, 1.05)
@@ -440,11 +441,15 @@ def create_cross_model_barchart(cross_df: pd.DataFrame, config_label: str, outpu
     fname = f'kappa_cross_model_{config_label.lower().replace(" ", "_")}'
     plt.savefig(output_dir / f'{fname}.png', dpi=150, bbox_inches='tight')
     plt.savefig(output_dir / f'{fname}.pdf', bbox_inches='tight')
+    (output_dir / f'{fname}.tex').write_text(
+        r'\includegraphics[width=\linewidth]{' + fname + r'.pdf}' + '\n',
+        encoding='utf-8',
+    )
     try:
         plt.savefig(output_dir / f'{fname}.pgf', format='pgf', bbox_inches='tight')
-        print(f"Cross-model chart saved to {output_dir / fname}.png + .pgf")
+        print(f"Cross-model chart saved: {fname}.png + .pdf + .pgf + .tex")
     except Exception as e:
-        print(f"Cross-model chart saved to {output_dir / fname}.png  (PGF fehlgeschlagen: {e})")
+        print(f"Cross-model chart saved: {fname}.png + .pdf + .tex  (PGF fehlgeschlagen: {e})")
     plt.close()
 
 

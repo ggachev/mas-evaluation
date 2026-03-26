@@ -66,15 +66,29 @@ def german_fmt(val: float, digits: int = 2) -> str:
 
 
 def save_fig(fig: plt.Figure, output_dir: Path, name: str) -> None:
-    """Speichert eine Figure als PNG und PGF (für LaTeX: \\input{name.pgf})."""
+    """Speichert eine Figure als PNG, PDF, PGF und TEX.
+
+    Die .tex-Datei referenziert die .pdf und kann per \\input{name.tex}
+    eingebunden werden. In Overleaf beide Dateien (.tex + .pdf) hochladen.
+    """
     png_path = output_dir / f'{name}.png'
+    pdf_path = output_dir / f'{name}.pdf'
     pgf_path = output_dir / f'{name}.pgf'
+    tex_path = output_dir / f'{name}.tex'
+
     fig.savefig(png_path, dpi=150, bbox_inches='tight')
+    fig.savefig(pdf_path, bbox_inches='tight')
+
+    tex_path.write_text(
+        r'\includegraphics[width=\linewidth]{' + name + r'.pdf}' + '\n',
+        encoding='utf-8',
+    )
+
     try:
         fig.savefig(pgf_path, bbox_inches='tight')
-        print(f"  Gespeichert: {png_path.name} + {pgf_path.name}")
+        print(f"  Gespeichert: {png_path.name} + {pdf_path.name} + {pgf_path.name} + {tex_path.name}")
     except Exception as e:
-        print(f"  Gespeichert: {png_path.name}  (PGF fehlgeschlagen: {e})")
+        print(f"  Gespeichert: {png_path.name} + {pdf_path.name} + {tex_path.name}  (PGF fehlgeschlagen: {e})")
 
 
 # ── 1. Violin-Plot: Annotationsverteilung ─────────────────────────────────
@@ -92,7 +106,7 @@ def create_annotation_distribution(df: pd.DataFrame, output_dir: Path) -> None:
     data_per_metric = [df[c].dropna().values for c in cols]
     labels = [ANNOTATION_COLS[c].replace('\n', ' ') for c in cols]
 
-    fig, ax = plt.subplots(figsize=(14, 6))
+    fig, ax = plt.subplots(figsize=(16, 8))
 
     # Violin-Plots zeichnen
     parts = ax.violinplot(
@@ -124,17 +138,17 @@ def create_annotation_distribution(df: pd.DataFrame, output_dir: Path) -> None:
         if len(vals) > 0:
             ax.text(
                 i, 5.38, f'Ø {german_fmt(np.mean(vals), 1)}',
-                ha='center', va='bottom', fontsize=8, color='#333333'
+                ha='center', va='bottom', fontsize=14, color='#333333'
             )
 
     ax.set_xticks(range(len(cols)))
-    ax.set_xticklabels(labels, fontsize=9, rotation=22, ha='right')
+    ax.set_xticklabels(labels, fontsize=14, rotation=22, ha='right')
     ax.set_yticks([1, 2, 3, 4, 5])
     ax.set_yticklabels(
         ['1 – Sehr schlecht', '2 – Schlecht', '3 – Akzeptabel', '4 – Gut', '5 – Sehr gut'],
-        fontsize=9
+        fontsize=14
     )
-    ax.set_ylabel('Likert-Score (1–5)', fontsize=11)
+    ax.set_ylabel('Likert-Score (1–5)', fontsize=15)
     ax.set_ylim(0.5, 5.65)
     ax.grid(axis='y', alpha=0.3)
 
@@ -165,7 +179,7 @@ def create_annotation_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
             if len(vals) > 0:
                 matrix[i, j] = vals.mean()
 
-    fig, ax = plt.subplots(figsize=(14, 4))
+    fig, ax = plt.subplots(figsize=(16, 5))
     im = ax.imshow(matrix, cmap='RdYlGn', vmin=1, vmax=5, aspect='auto')
 
     for i in range(len(AGENT_ORDER)):
@@ -173,21 +187,21 @@ def create_annotation_heatmap(df: pd.DataFrame, output_dir: Path) -> None:
             val = matrix[i, j]
             if np.isnan(val):
                 ax.text(j, i, 'n.a.', ha='center', va='center',
-                        fontsize=10, color='#888888', fontstyle='italic')
+                        fontsize=13, color='#888888', fontstyle='italic')
             else:
                 color = 'white' if val < 2.0 or val > 4.2 else 'black'
                 ax.text(j, i, german_fmt(val, 1), ha='center', va='center',
-                        fontsize=12, fontweight='bold', color=color)
+                        fontsize=14, fontweight='bold', color=color)
 
     ax.set_xticks(range(len(cols)))
-    ax.set_xticklabels(labels, fontsize=9, rotation=22, ha='right')
+    ax.set_xticklabels(labels, fontsize=12, rotation=30, ha='right')
     ax.set_yticks(range(len(AGENT_ORDER)))
-    ax.set_yticklabels(AGENT_ORDER, fontsize=12)
+    ax.set_yticklabels(AGENT_ORDER, fontsize=14)
 
     cbar = plt.colorbar(im, ax=ax, shrink=0.9, pad=0.02)
-    cbar.set_label('Mittlerer Likert-Score', fontsize=10)
+    cbar.set_label('Mittlerer Likert-Score', fontsize=12)
     cbar.set_ticks([1, 2, 3, 4, 5])
-    cbar.set_ticklabels(['1', '2', '3', '4', '5'])
+    cbar.set_ticklabels(['1', '2', '3', '4', '5'], fontsize=11)
 
     plt.tight_layout()
     save_fig(fig, output_dir, 'annotation_heatmap_by_agent')
@@ -212,7 +226,7 @@ def create_annotation_distribution_by_agent(
     ytick_labels = ['1 – Sehr schlecht', '2 – Schlecht', '3 – Akzeptabel',
                     '4 – Gut', '5 – Sehr gut']
 
-    fig, axes = plt.subplots(2, 2, figsize=(16, 10), sharey=True)
+    fig, axes = plt.subplots(2, 2, figsize=(18, 12), sharey=True)
     axes = axes.flatten()
     rng = np.random.default_rng(42)
 
@@ -228,7 +242,7 @@ def create_annotation_distribution_by_agent(
         data_vals = [d for _, d in valid]
 
         if not data_vals:
-            ax.set_title(agent, fontsize=12, fontweight='bold',
+            ax.set_title(agent, fontsize=15, fontweight='bold',
                          color=color, pad=8)
             continue
 
@@ -252,14 +266,14 @@ def create_annotation_distribution_by_agent(
         # Mittelwert beschriften
         for pos, vals in zip(positions, data_vals):
             ax.text(pos, 5.38, f'Ø {german_fmt(np.mean(vals), 1)}',
-                    ha='center', va='bottom', fontsize=7.5, color='#333333')
+                    ha='center', va='bottom', fontsize=13, color='#333333')
 
         ax.set_xticks(range(len(cols)))
-        ax.set_xticklabels(metric_labels, fontsize=8, rotation=22, ha='right')
+        ax.set_xticklabels(metric_labels, fontsize=13, rotation=22, ha='right')
         ax.set_yticks([1, 2, 3, 4, 5])
-        ax.set_yticklabels(ytick_labels, fontsize=8)
+        ax.set_yticklabels(ytick_labels, fontsize=13)
         ax.set_ylim(0.5, 5.65)
-        ax.set_title(agent, fontsize=12, fontweight='bold',
+        ax.set_title(agent, fontsize=15, fontweight='bold',
                      color=color, pad=8)
         ax.grid(axis='y', alpha=0.3)
 
@@ -302,14 +316,12 @@ def create_annotation_spread_heatmap(
                 matrix_std[i, j]  = 0.0
                 matrix_n[i, j]    = 1
 
-    # Zwei Subplots nebeneinander: Mittelwert + Std
-    fig, (ax_mean, ax_std) = plt.subplots(1, 2, figsize=(22, 4))
+    # Zwei Subplots übereinander: Mittelwert + Std
+    fig, (ax_mean, ax_std) = plt.subplots(2, 1, figsize=(16, 9))
 
-    for ax, matrix, title, vmin, vmax, cmap, fmt_str in [
-        (ax_mean, matrix_mean,
-         'Mittlerer Likert-Score (Ø)', 1, 5, 'RdYlGn', '1'),
-        (ax_std, matrix_std,
-         'Standardabweichung (σ)', 0, 2, 'YlOrRd', '0,0'),
+    for ax, matrix, title, vmin, vmax, cmap in [
+        (ax_mean, matrix_mean, 'Mittlerer Likert-Score (Ø)', 1, 5, 'RdYlGn'),
+        (ax_std,  matrix_std,  'Standardabweichung',         0, 2, 'YlOrRd'),
     ]:
         im = ax.imshow(matrix, cmap=cmap, vmin=vmin, vmax=vmax, aspect='auto')
 
@@ -318,23 +330,22 @@ def create_annotation_spread_heatmap(
                 val = matrix[i, j]
                 if np.isnan(val):
                     ax.text(j, i, 'n.a.', ha='center', va='center',
-                            fontsize=9, color='#888888', fontstyle='italic')
+                            fontsize=13, color='#888888', fontstyle='italic')
                 else:
-                    # Kontrast je nach Hintergrundfarbe
                     norm_val = (val - vmin) / (vmax - vmin)
                     text_color = 'white' if norm_val > 0.75 else 'black'
                     ax.text(j, i, german_fmt(val, 1),
                             ha='center', va='center',
-                            fontsize=11, fontweight='bold', color=text_color)
+                            fontsize=14, fontweight='bold', color=text_color)
 
         ax.set_xticks(range(len(cols)))
-        ax.set_xticklabels(labels, fontsize=9, rotation=22, ha='right')
+        ax.set_xticklabels(labels, fontsize=12, rotation=30, ha='right')
         ax.set_yticks(range(len(AGENT_ORDER)))
-        ax.set_yticklabels(AGENT_ORDER, fontsize=11)
-        ax.set_title(title, fontsize=11, fontweight='bold', pad=10)
+        ax.set_yticklabels(AGENT_ORDER, fontsize=14)
+        ax.set_title(title, fontsize=14, fontweight='bold', pad=10)
 
         cbar = plt.colorbar(im, ax=ax, shrink=0.9, pad=0.02)
-        cbar.ax.tick_params(labelsize=9)
+        cbar.ax.tick_params(labelsize=11)
 
     plt.tight_layout()
     save_fig(fig, output_dir, 'annotation_spread_heatmap')

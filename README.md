@@ -1,128 +1,158 @@
-# Metrics Evaluation Framework for Autonomous Coding Agents
+# Evaluation autonomer Coding-Agenten
 
-A comprehensive evaluation framework for measuring the performance of autonomous coding agents ([Openhands](https://github.com/OpenHands/OpenHands), [SWE-Agent](https://github.com/SWE-agent/SWE-agent), [Live-SWE-Agent](https://github.com/OpenAutoCoder/live-swe-agent), [MetaGPT](https://github.com/FoundationAgents/MetaGPT)). This system evaluates agent trajectories using both **deterministic metrics** and **LLM-as-a-Judge** probabilistic metrics.
+Dieses Repository enthält die vollständige Evaluierungs-Pipeline der Masterarbeit.
+Es bewertet Agenten-Trajektorien von vier Systemen (OpenHands, SWE-agent, Live-SWE-agent, MetaGPT)
+mit deterministischen Metriken und LLM-as-a-Judge.
 
-## Overview
+Detaillierte Dokumentation der Analyse-Skripte und Abbildungen:
+→ [`metrics_evaluation/README.md`](metrics_evaluation/README.md)
 
-This project is part of a Master's thesis on evaluating multi-agent coding systems. It analyzes agent execution logs (trajectories) to measure:
+---
 
-- Task success and resource efficiency
-- Strategic planning and navigation quality
-- Tool usage patterns and effectiveness
-- Context utilization and memory consistency
-- Multi-agent communication and coordination (for MAS)
+## Verzeichnisstruktur
 
-## Installation
+```
+mas-evaluation/
+├── agent_systems/               # Quellcode der Agentensysteme (Referenz-Implementierungen)
+│   ├── openhands/
+│   ├── SWE-agent/
+│   ├── live-swe-agent/
+│   ├── metagpt/
+│   ├── SWE-bench/
+│   ├── mini-swe-agent/
+│   └── chatdev/
+│
+├── logs/                        # Rohe Agenten-Trajektorien (Log-Dateien)
+│   ├── openhands/
+│   ├── swe-agent/
+│   ├── live-swe-agent/
+│   └── metagpt/
+│
+├── diffs/                       # Generierte Patches je Agent und Issue
+│   ├── openhands/
+│   ├── swe-agent/
+│   ├── live-swe-agent/
+│   └── metagpt/
+│
+├── swe_bench_verified_issues/   # Die 15 ausgewählten SWE-bench Verified Issues
+│
+├── metrics_evaluation/          # Evaluierungs-Pipeline (Hauptmodul)
+│   ├── metrics_evaluation.py    # Haupt-Evaluationsskript
+│   ├── batch_evaluation.py      # Stapelverarbeitung aller Issues
+│   ├── consolidate_results.py   # Fasst eval_*.json zu consolidated_results.csv zusammen
+│   ├── agent_parsers/           # Parser für die verschiedenen Log-Formate
+│   ├── descriptive_analysis.py  # Deskriptive Analyse + Plots (RQ1, RQ3)
+│   ├── annotation_analysis.py   # Visualisierung manueller Annotationen (RQ2)
+│   ├── spearman_correlation.py  # Spearman-Korrelation Auto vs. Mensch (RQ2)
+│   ├── kappa_sample_rate_comparison.py  # Weighted Kappa SR + Cross-Model (RQ4, RQ5)
+│   ├── auc_predictor_analysis.py        # AUC-Prädiktor-Analyse (RQ4.3)
+│   ├── plot_spearman_sr_rq4.py          # Spearman SR=1 vs. SR=5 (RQ4.2)
+│   ├── manual_annotations.csv   # Manuelle Expertenbewertungen (Rater 1)
+│   ├── evaluation_results/      # Ergebnisse, CSVs und Abbildungen
+│   │   ├── 1_step_gptoss120b/   # GPT-OSS-120b, SR=1 (Standard-Konfiguration)
+│   │   ├── 1_step_qwen3_235b/   # Qwen3-235b, SR=1
+│   │   ├── 1_step_gpt4omini_8b/ # GPT-4o-mini-8b, SR=1
+│   │   ├── default_gptoss120b/  # GPT-OSS-120b, SR=5 (Reduzierte Konfiguration)
+│   │   ├── default_qwen3_235b/  # Qwen3-235b, SR=5
+│   │   └── default_gpt4omini_8b/# GPT-4o-mini-8b, SR=5
+│   └── README.md                # Detaillierte Dokumentation
+│
+└── figures/                     # TikZ-Abbildungen (Kapitel 2–4)
+    ├── build_figure.sh          # Build-Skript → erzeugt PNG + PGF
+    ├── fig_blackbox_vs_glassbox.tex
+    ├── fig_agent_architecture.tex
+    ├── fig_agent_evaluation.tex
+    ├── fig_eval_pipeline.tex
+    ├── fig_stratified_sample.tex
+    ├── fig_pipeline_flow.tex
+    └── fig_prompt_anatomy.tex
+```
 
-### Requirements
+---
 
-- Python 3.8+
-- API access to an LLM judge (Helmholtz Blablador or OpenAI)
-- requirements.txt under metrics_evaluation/requirements.txt
-
-### Setup
+## Setup
 
 ```bash
-# Clone the repository
-git clone <repository-url>
+cd mas-evaluation/metrics_evaluation
+python3 -m venv venv
+source venv/bin/activate
+pip install openai pandas scipy scikit-learn matplotlib sentence-transformers
+
+export HELMHOLTZ_API_KEY="<key>"
+# oder
+export OPENAI_API_KEY="<key>"
+```
+
+---
+
+## Evaluation ausführen
+
+```bash
 cd mas-evaluation
 
-# Install dependencies
-pip install openai numpy sentence-transformers
+# Einzelne Trajektorie
+python metrics_evaluation/metrics_evaluation.py <trajectory_file> --agent OpenHands
 
-# Set API key
-export HELMHOLTZ_API_KEY="your-api-key"
-# or
-export OPENAI_API_KEY="your-api-key"
+# Stapelverarbeitung
+python metrics_evaluation/batch_evaluation.py --agent OpenHands --logs-dir logs/openhands/logs
+python metrics_evaluation/batch_evaluation.py --agent SWE-Agent --logs-dir logs/swe-agent
+python metrics_evaluation/batch_evaluation.py --agent live-swe-agent --logs-dir logs/live-swe-agent
+python metrics_evaluation/batch_evaluation.py --agent MetaGPT --logs-dir logs/metagpt --mas --global-plan
+
+# Ergebnisse konsolidieren
+cd metrics_evaluation
+python consolidate_results.py
 ```
 
-## Usage
+---
 
-```bash
-cd mas-evaluation
+## Metriken
 
-# Single trajectory
-python metrics_evaluation/metrics_evaluation.py <trajectory_file> --agent <AgentType>
+### Kategorie 1: Ergebnisse und Kosten
 
-# Batch evaluation (all issues)
-python metrics_evaluation/batch_evaluation.py --agent <AgentType> --logs-dir <logs_directory>
-```
+| Metrik | Typ | Beschreibung |
+|--------|-----|--------------|
+| M1.1 Task Success Rate | Manuell | Binärer Erfolg aus manuellen Labels |
+| M1.2 Resource Efficiency | Deterministisch | Kosten, Token, Dauer, Schrittanzahl |
 
-### Advanced Options
+### Kategorie 2: Strategie und Navigation
 
-```bash
-# Custom sample rates
-python metrics_evaluation/batch_evaluation.py --agent OpenHands --logs-dir logs/openhands \
-    --sample-rate 3 --context-window-steps 10
+| Metrik | Typ | Beschreibung |
+|--------|-----|--------------|
+| M2.1 Loop Detection | Deterministisch | Hash-basierte Erkennung wiederholter Sequenzen |
+| M2.2 Trajectory Efficiency | LLM-Judge | Effizienz des Lösungswegs |
+| M2.3 Global Strategy Consistency | LLM-Judge | Planformulierung und -einhaltung (nur MetaGPT) |
+| M2.4 Stepwise Reasoning Quality | LLM-Judge | Logische Qualität je Schritt |
+| M2.5 Role Adherence | LLM-Judge | Einhaltung der Agenten-Rolle |
 
-# Start from specific issue
-python metrics_evaluation/batch_evaluation.py --agent SWE-Agent --logs-dir logs/swe-agent --start-from 5
+### Kategorie 3: Werkzeuge
 
-# Evaluate single issue only
-python metrics_evaluation/batch_evaluation.py --agent SWE-Agent --logs-dir logs/swe-agent --only-issue 10
-```
+| Metrik | Typ | Beschreibung |
+|--------|-----|--------------|
+| M3.1 Tool Selection Quality | LLM-Judge | Angemessenheit der Werkzeugwahl |
+| M3.2 Tool Execution Success | LLM-Judge | Technische Ausführungsrate |
+| M3.3 Tool Usage Efficiency | Deterministisch | Kontext-Verschmutzungs-Messung |
 
-### CLI Arguments
+### Kategorie 4: Wissen und Kontext
 
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--agent` | required | Agent type: `OpenHands`, `SWE-Agent`, `Live-SWE-Agent`, `MetaGPT` |
-| `--mas` | false | Force multi-agent system evaluation |
-| `--sample-rate` | 5 | Sample rate for tool metrics (3.1, 3.2) |
-| `--context-window-steps` | 8 | Sliding window size for context metric (4.1) |
-| `--context-sample-rate` | 4 | Sample rate for context windows |
-| `--start-from` | 1 | Start from issue N (batch mode) |
+| Metrik | Typ | Beschreibung |
+|--------|-----|--------------|
+| M4.1 Context Utilization | LLM-Judge | Konsistenz im Sliding-Window |
 
-## Metrics
+### Kategorie 5: Multi-Agenten-Systeme (nur MetaGPT)
 
-### Category 1: Results & Costs
+| Metrik | Typ | Beschreibung |
+|--------|-----|--------------|
+| M5.1 Communication Efficiency | LLM-Judge | Signal-Rausch-Verhältnis der Kommunikation |
+| M5.2 Information Diversity | Embeddings | Diversität der Agenten-Nachrichten |
+| M5.3 Path Redundancy | Deterministisch | Ping-Pong-Mustererkennung |
+| M5.4 Agent Invocation Distribution | Deterministisch | Arbeitsverteilung (Shannon-Entropie) |
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| 1.1 Task Success Rate | Manual Labels | Binary success from labeled data |
-| 1.2 Resource Efficiency | Deterministic | Cost, tokens, duration, step count |
+---
 
-### Category 2: Strategy & Navigation
+## Ausgabeformat
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| 2.1 Loop Detection | Deterministic | Hash-based repeated sequence detection |
-| 2.2 Trajectory Efficiency | LLM Judge | Path efficiency (not success) |
-| 2.3 Global Strategy Consistency | LLM Judge | Plan formulation and adherence |
-| 2.4 Stepwise Reasoning Quality | LLM Judge | Per-step logical flow analysis |
-| 2.5 Role Adherence | LLM Judge | Behavioral compliance evaluation |
-
-### Category 3: Tools (Actions)
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| 3.1 Tool Selection Quality | LLM Judge | Appropriateness of tool choices |
-| 3.2 Tool Execution Success | LLM Judge | Technical execution success rate |
-| 3.3 Tool Usage Efficiency | Deterministic | Context pollution measurement |
-
-### Category 4: Knowledge (Memory)
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| 4.1 Context Utilization | LLM Judge | Consistency within sliding windows |
-
-### Category 5: Multi-Agent Systems
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| 5.1 Communication Efficiency | LLM Judge | Signal-to-noise in agent communication |
-| 5.2 Information Diversity | Embeddings | Diversity of agent messages |
-| 5.3 Path Redundancy | Deterministic | Ping-pong pattern detection |
-| 5.4 Agent Invocation Distribution | Deterministic | Work distribution (Shannon entropy) |
-
-## Output
-
-Results are saved to `evaluation_results/`:
-
-- `eval_{agent}_{task_id}.json` - Evaluation results
-- `api_logs_{agent}_{task_id}.json` - LLM API call logs
-
-### Example Output Structure
+Ergebnisse werden in `evaluation_results/` gespeichert:
 
 ```json
 {
@@ -135,80 +165,29 @@ Results are saved to `evaluation_results/`:
   },
   "metric_1_1_task_success_rate": {"success": true, "source": "manual_labels"},
   "metric_1_2_resource_efficiency": {"total_cost_usd": 0.017, "total_tokens": 68524},
-  "metric_2_1_loop_detection": {"loop_detected": false},
   "metric_2_2_trajectory_efficiency": {"score": 0.85, "reasoning": "..."},
-  "..."
+  "metric_5_1_communication_efficiency": "N/A - Single Agent"
 }
 ```
 
-## Project Structure
+---
 
-```
-mas-evaluation/
-├── agent_systems/               # Agent source code (reference implementations)
-│   ├── chatdev/
-│   ├── metagpt/
-│   ├── mini-swe-agent/
-│   ├── openhands/
-│   ├── SWE-agent/
-│   ├── SWE-bench/
-│   └── SWE-search/
-├── diffs/                       # Generated patches/diffs per agent
-│   ├── live-swe-agent/
-│   ├── metagpt/
-│   ├── openhands/
-│   └── swe-agent/
-├── logs/                        # Agent execution trajectories
-│   ├── live-swe-agent/
-│   ├── metagpt/
-│   ├── openhands/
-│   └── swe-agent/
-├── metrics_evaluation/          # Evaluation framework (this module)
-│   ├── metrics_evaluation.py    # Main evaluation script
-│   ├── batch_evaluation.py      # Batch processing script
-│   ├── evaluation_prompts.py    # LLM prompts for judge metrics
-│   ├── evaluation_data_models.py # Data models
-│   ├── evaluation_labels_*.json # Manual success labels per agent
-│   ├── agent_parsers/
-│   │   ├── openhands_parser.py
-│   │   ├── sweagent_parser.py
-│   │   ├── live_sweagent_parser.py
-│   │   └── metagpt_parser.py
-│   ├── evaluation_results/      # Output directory
-│   └── README.md
-└── swe_bench_verified_issues/   # 15 SWE-bench verified issues for evaluation
-```
+## Unterstützte Agenten-Formate
 
-## Supported Agent Formats
+| Agent | Format | Besonderheit |
+|-------|--------|--------------|
+| OpenHands | JSON (`history`-Array) | Kosten aus `metrics.accumulated_cost` |
+| SWE-Agent | `.traj` (JSON) + `.config.yaml` | Aufgabe aus `problem_statement.text` |
+| Live-SWE-Agent | `.traj` + `.config.yaml` | Ähnlich SWE-Agent |
+| MetaGPT | `.txt` / `.log` | Multi-Agenten-Erkennung aus `AgentName(Role)`-Mustern |
 
-### OpenHands
-- Format: JSON with `history` array
-- Cost/tokens from `metrics.accumulated_cost`
+---
 
-### SWE-Agent
-- Format: `.traj` (JSON) + `.config.yaml`
-- Task from `problem_statement.text` in config
-
-### Live-SWE-Agent
-- Format: Similar to SWE-Agent
-- Real-time execution logs
-
-### MetaGPT
-- Format: `.txt` or `.log` text files
-- Multi-agent detection from `AgentName(Role)` patterns
-- Supports multiple agents like Mike (Team Leader), Alex (Engineer), Alice (PM), Bob (Architect), David (DataAnalyst) and so on dynamically.
-
-## Configuration
-
-Default LLM configuration in `metrics_evaluation.py`:
+## LLM-Judge Konfiguration
 
 ```python
 BASE_URL_JUDGE = "https://api.helmholtz-blablador.fz-juelich.de/v1"
-MODEL_JUDGE = "1 - GPT-OSS-120b - an open model released by OpenAI in August 2025"
+MODEL_JUDGE    = "1 - GPT-OSS-120b - an open model released by OpenAI in August 2025"
 MODEL_EMBEDDING = "text-embedding-3-small"
 CONTEXT_WINDOW_SIZE = 131000
 ```
-
-## License
-
-Part of Master's thesis research.

@@ -265,9 +265,8 @@ def create_scatterplots(merged_df: pd.DataFrame, output_dir: Path):
 
 def create_correlation_heatmap(results_df: pd.DataFrame, output_dir: Path):
     """Create a bar chart showing correlation coefficients."""
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(13, 7))
 
-    # Filter out rows with NaN
     valid_results = results_df.dropna(subset=['Spearman_Rho'])
 
     if len(valid_results) == 0:
@@ -277,47 +276,49 @@ def create_correlation_heatmap(results_df: pd.DataFrame, output_dir: Path):
     x = range(len(valid_results))
     rhos = valid_results['Spearman_Rho'].values
 
-    # Color bars by correlation strength
     colors = []
     for rho in rhos:
         if abs(rho) >= 0.6:
-            colors.append('#2ca02c')  # Green - strong
+            colors.append('#2ca02c')
         elif abs(rho) >= 0.4:
-            colors.append('#ff7f0e')  # Orange - moderate
+            colors.append('#ff7f0e')
         else:
-            colors.append('#d62728')  # Red - weak
+            colors.append('#d62728')
 
     bars = ax.bar(x, rhos, color=colors, edgecolor='black', alpha=0.8)
 
-    # Add value labels on bars
     for bar, rho, sig in zip(bars, rhos, valid_results['Significance']):
         height = bar.get_height()
-        ax.annotate(f'{rho:.3f}{sig}',
+        ax.annotate(f'{rho:.2f}{sig}',
                     xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 3 if height >= 0 else -12),
+                    xytext=(0, 4),
                     textcoords="offset points",
-                    ha='center', va='bottom' if height >= 0 else 'top',
-                    fontsize=10, fontweight='bold')
+                    ha='center', va='bottom',
+                    fontsize=13, fontweight='bold')
 
     ax.set_xticks(x)
     ax.set_xticklabels([f"{m}\n({d})" for m, d in
                         zip(valid_results['Metric'], valid_results['Description'])],
-                       rotation=0, ha='center', fontsize=9)
-    ax.set_ylabel('Spearman ρ', fontsize=12)
-    ax.set_title('Spearman Correlation: Auto Scores vs. Human Expert Scores', fontsize=14)
-    ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
-    ax.axhline(y=0.6, color='green', linestyle='--', linewidth=1, alpha=0.5, label='Strong (0.6)')
-    ax.axhline(y=0.4, color='orange', linestyle='--', linewidth=1, alpha=0.5, label='Moderate (0.4)')
-    ax.axhline(y=-0.6, color='green', linestyle='--', linewidth=1, alpha=0.5)
-    ax.axhline(y=-0.4, color='orange', linestyle='--', linewidth=1, alpha=0.5)
-    ax.set_ylim(-1.1, 1.1)
-    ax.legend(loc='upper right')
+                       rotation=30, ha='right', fontsize=12)
+    ax.set_ylabel('Spearman rho', fontsize=14)
+    ax.axhline(y=0.6, color='green', linestyle='--', linewidth=1.5,
+               alpha=0.6, label='Stark (0,60)')
+    ax.axhline(y=0.4, color='orange', linestyle='--', linewidth=1.5,
+               alpha=0.6, label='Moderat (0,40)')
+    ax.set_ylim(0, 1.05)
+    ax.tick_params(axis='y', labelsize=12)
+    ax.legend(loc='upper right', fontsize=12)
     ax.grid(axis='y', alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(output_dir / 'correlation_barchart.png', dpi=150, bbox_inches='tight')
-    plt.savefig(output_dir / 'correlation_barchart.pdf', bbox_inches='tight')
-    print(f"Bar chart saved to {output_dir / 'correlation_barchart.png'}")
+    name = 'correlation_barchart'
+    fig.savefig(output_dir / f'{name}.png', dpi=150, bbox_inches='tight')
+    fig.savefig(output_dir / f'{name}.pdf', bbox_inches='tight')
+    (output_dir / f'{name}.tex').write_text(
+        r'\includegraphics[width=\linewidth]{' + name + r'.pdf}' + '\n',
+        encoding='utf-8',
+    )
+    print(f"Bar chart saved to {output_dir / f'{name}.png'} + .pdf + .tex")
     plt.close()
 
 
