@@ -1,7 +1,10 @@
-# Evaluation of Autonomous Coding Agents
+# Evaluation of Autonomous Agents
 
 This repository contains the complete evaluation pipeline for my master's thesis at the University of Leipzig.
 It evaluates agent trajectories from four systems (OpenHands, SWE-agent, Live-SWE-agent, MetaGPT) using deterministic metrics and LLM-as-a-Judge.
+
+<img width="1038" height="496" alt="Bildschirmfoto 2026-04-19 um 09 27 31" src="https://github.com/user-attachments/assets/9add1840-fe1a-45d0-a25f-b20e5743940c" />
+
 
 Detailed documentation of the analysis scripts and figures:
 → [`metrics_evaluation/README.md`](metrics_evaluation/README.md)
