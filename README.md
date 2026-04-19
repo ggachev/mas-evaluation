@@ -1,53 +1,54 @@
-# Evaluation autonomer Coding-Agenten
+# Evaluation of Autonomous Coding Agents
 
-Dieses Repository enthält die vollständige Evaluierungs-Pipeline der Masterarbeit.
-Es bewertet Agenten-Trajektorien von vier Systemen (OpenHands, SWE-agent, Live-SWE-agent, MetaGPT)
-mit deterministischen Metriken und LLM-as-a-Judge.
+This repository contains the complete evaluation pipeline for my master's thesis at the University of Leipzig.
+It evaluates agent trajectories from four systems (OpenHands, SWE-agent, Live-SWE-agent, MetaGPT) using deterministic metrics and LLM-as-a-Judge.
 
-Detaillierte Dokumentation der Analyse-Skripte und Abbildungen:
+Detailed documentation of the analysis scripts and figures:
 → [`metrics_evaluation/README.md`](metrics_evaluation/README.md)
 
 ---
 
-## Verzeichnisstruktur
+## Directory Structure
 
 ```
 mas-evaluation/
-├── logs/                        # Rohe Agenten-Trajektorien (Log-Dateien)
+├── logs/                        # Raw agent trajectories (log files)
 │   ├── openhands/
 │   ├── swe-agent/
 │   ├── live-swe-agent/
 │   └── metagpt/
 │
-├── diffs/                       # Generierte Patches je Agent und Issue
+├── diffs/                       # Generated patches per agent and issue
 │   ├── openhands/
 │   ├── swe-agent/
 │   ├── live-swe-agent/
 │   └── metagpt/
 │
-├── metrics_evaluation/          # Evaluierungs-Pipeline (Hauptmodul)
-│   ├── metrics_evaluation.py    # Haupt-Evaluationsskript
-│   ├── batch_evaluation.py      # Stapelverarbeitung aller Issues
-│   ├── consolidate_results.py   # Fasst eval_*.json zu consolidated_results.csv zusammen
-│   ├── agent_parsers/           # Parser für die verschiedenen Log-Formate
-│   ├── descriptive_analysis.py  # Deskriptive Analyse + Plots (RQ1, RQ3)
-│   ├── annotation_analysis.py   # Visualisierung manueller Annotationen (RQ2)
-│   ├── spearman_correlation.py  # Spearman-Korrelation Auto vs. Mensch (RQ2)
+├── metrics_evaluation/          # Evaluation pipeline (main module)
+│   ├── metrics_evaluation.py    # Main evaluation script
+│   ├── batch_evaluation.py      # Batch processing of all issues
+│   ├── consolidate_results.py   # Consolidates eval_*.json into consolidated_results.csv
+│   ├── agent_parsers/           # Parsers for the various log formats
+│   ├── descriptive_analysis.py  # Descriptive analysis + plots (RQ1, RQ3)
+│   ├── annotation_analysis.py   # Visualization of manual annotations (RQ2)
+│   ├── spearman_correlation.py  # Spearman correlation auto vs. human (RQ2)
 │   ├── kappa_sample_rate_comparison.py  # Weighted Kappa SR + Cross-Model (RQ4, RQ5)
-│   ├── auc_predictor_analysis.py        # AUC-Prädiktor-Analyse (RQ4.3)
+│   ├── auc_predictor_analysis.py        # AUC predictor analysis (RQ4.3)
 │   ├── plot_spearman_sr_rq4.py          # Spearman SR=1 vs. SR=5 (RQ4.2)
-│   ├── manual_annotations.csv   # Manuelle Expertenbewertungen (Rater 1)
-│   ├── evaluation_split_final.txt       # Die 15 ausgewählten SWE-bench Verified Issues
-│   ├── evaluation_results/      # Ergebnisse, CSVs und Abbildungen
-│   │   ├── 1_step_gptoss120b/   # GPT-OSS-120b, SR=1 (Standard-Konfiguration)
+│   ├── manual_annotations.csv   # Manual expert ratings (Rater 1)
+│   ├── evaluation_split_final.txt       # The 15 selected SWE-bench Verified issues
+│   ├── evaluation_results/      # Results, CSVs and figures
+│   │   ├── 1_step_gptoss120b/   # GPT-OSS-120b, SR=1 (standard configuration)
 │   │   ├── 1_step_qwen3_235b/   # Qwen3-235b, SR=1
 │   │   ├── 1_step_gpt4omini_8b/ # GPT-4o-mini-8b, SR=1
-│   │   ├── default_gptoss120b/  # GPT-OSS-120b, SR=5 (Reduzierte Konfiguration)
+│   │   ├── default_gptoss120b/  # GPT-OSS-120b, SR=5 (reduced configuration)
 │   │   ├── default_qwen3_235b/  # Qwen3-235b, SR=5
 │   │   └── default_gpt4omini_8b/# GPT-4o-mini-8b, SR=5
-│   └── README.md                # Detaillierte Dokumentation
+│   └── README.md                # Detailed documentation
 │
-└──
+├── README.md                    # Detailed project documentation
+├── run_all_evaluations.sh       # Run all evaluations via batch
+└── run_all_metrics.sh           # Evaluate specific traces selectively
 ```
 
 ---
@@ -61,80 +62,80 @@ source venv/bin/activate
 pip install openai pandas scipy scikit-learn matplotlib sentence-transformers
 
 export HELMHOLTZ_API_KEY="<key>"
-# oder
+# or
 export OPENAI_API_KEY="<key>"
 ```
 
 ---
 
-## Evaluation ausführen
+## Running the Evaluation
 
 ```bash
 cd mas-evaluation
 
-# Einzelne Trajektorie
+# Single trajectory
 python metrics_evaluation/metrics_evaluation.py <trajectory_file> --agent OpenHands
 
-# Stapelverarbeitung
+# Batch processing
 python metrics_evaluation/batch_evaluation.py --agent OpenHands --logs-dir logs/openhands/logs
 python metrics_evaluation/batch_evaluation.py --agent SWE-Agent --logs-dir logs/swe-agent
 python metrics_evaluation/batch_evaluation.py --agent live-swe-agent --logs-dir logs/live-swe-agent
 python metrics_evaluation/batch_evaluation.py --agent MetaGPT --logs-dir logs/metagpt --mas --global-plan
 
-# Ergebnisse konsolidieren
+# Consolidate results
 cd metrics_evaluation
 python consolidate_results.py
 ```
 
 ---
 
-## Metriken
+## Metrics
 
-### Kategorie 1: Ergebnisse und Kosten
+### Category 1: Results and Costs
 
-| Metrik | Typ | Beschreibung |
-|--------|-----|--------------|
-| M1.1 Task Success Rate | Manuell | Binärer Erfolg aus manuellen Labels |
-| M1.2 Resource Efficiency | Deterministisch | Kosten, Token, Dauer, Schrittanzahl |
+| Metric | Type | Description |
+|--------|------|-------------|
+| M1.1 Task Success Rate | Manual | Binary success from manual labels |
+| M1.2 Resource Efficiency | Deterministic | Costs, tokens, duration, step count |
 
-### Kategorie 2: Strategie und Navigation
+### Category 2: Strategy and Navigation
 
-| Metrik | Typ | Beschreibung |
-|--------|-----|--------------|
-| M2.1 Loop Detection | Deterministisch | Hash-basierte Erkennung wiederholter Sequenzen |
-| M2.2 Trajectory Efficiency | LLM-Judge | Effizienz des Lösungswegs |
-| M2.3 Global Strategy Consistency | LLM-Judge | Planformulierung und -einhaltung (nur MetaGPT) |
-| M2.4 Stepwise Reasoning Quality | LLM-Judge | Logische Qualität je Schritt |
-| M2.5 Role Adherence | LLM-Judge | Einhaltung der Agenten-Rolle |
+| Metric | Type | Description |
+|--------|------|-------------|
+| M2.1 Loop Detection | Deterministic | Hash-based detection of repeated sequences |
+| M2.2 Trajectory Efficiency | LLM-Judge | Efficiency of the solution path |
+| M2.3 Global Strategy Consistency | LLM-Judge | Plan formulation and adherence (MetaGPT only) |
+| M2.4 Stepwise Reasoning Quality | LLM-Judge | Logical quality per step |
+| M2.5 Role Adherence | LLM-Judge | Adherence to the agent role |
 
-### Kategorie 3: Werkzeuge
+### Category 3: Tools
 
-| Metrik | Typ | Beschreibung |
-|--------|-----|--------------|
-| M3.1 Tool Selection Quality | LLM-Judge | Angemessenheit der Werkzeugwahl |
-| M3.2 Tool Execution Success | LLM-Judge | Technische Ausführungsrate |
-| M3.3 Tool Usage Efficiency | Deterministisch | Kontext-Verschmutzungs-Messung |
+| Metric | Type | Description |
+|--------|------|-------------|
+| M3.1 Tool Selection Quality | LLM-Judge | Appropriateness of tool choice |
+| M3.2 Tool Execution Success | LLM-Judge | Technical execution rate |
+| M3.3 Tool Usage Efficiency | Deterministic | Context pollution measurement |
 
-### Kategorie 4: Wissen und Kontext
+### Category 4: Knowledge and Context
 
-| Metrik | Typ | Beschreibung |
-|--------|-----|--------------|
-| M4.1 Context Utilization | LLM-Judge | Konsistenz im Sliding-Window |
+| Metric | Type | Description |
+|--------|------|-------------|
+| M4.1 Context Utilization | LLM-Judge | Consistency in sliding window |
 
-### Kategorie 5: Multi-Agenten-Systeme (nur MetaGPT)
+### Category 5: Multi-Agent Systems (MetaGPT only)
 
-| Metrik | Typ | Beschreibung |
-|--------|-----|--------------|
-| M5.1 Communication Efficiency | LLM-Judge | Signal-Rausch-Verhältnis der Kommunikation |
-| M5.2 Information Diversity | Embeddings | Diversität der Agenten-Nachrichten |
-| M5.3 Path Redundancy | Deterministisch | Ping-Pong-Mustererkennung |
-| M5.4 Agent Invocation Distribution | Deterministisch | Arbeitsverteilung (Shannon-Entropie) |
+| Metric | Type | Description |
+|--------|------|-------------|
+| M5.1 Communication Efficiency | LLM-Judge | Signal-to-noise ratio of communication |
+| M5.2 Information Diversity | Embeddings | Diversity of agent messages |
+| M5.3 Path Redundancy | Deterministic | Ping-pong pattern detection |
+| M5.4 Agent Invocation Distribution | Deterministic | Workload distribution (Shannon entropy) |
 
 ---
 
-## Ausgabeformat
+## Output Format
 
-Ergebnisse werden in `evaluation_results/` gespeichert:
+Results are stored in `evaluation_results/`:
 
 ```json
 {
@@ -154,18 +155,18 @@ Ergebnisse werden in `evaluation_results/` gespeichert:
 
 ---
 
-## Unterstützte Agenten-Formate
+## Supported Agent Formats
 
-| Agent | Format | Besonderheit |
-|-------|--------|--------------|
-| OpenHands | JSON (`history`-Array) | Kosten aus `metrics.accumulated_cost` |
-| SWE-Agent | `.traj` (JSON) + `.config.yaml` | Aufgabe aus `problem_statement.text` |
-| Live-SWE-Agent | `.traj` + `.config.yaml` | Ähnlich SWE-Agent |
-| MetaGPT | `.txt` / `.log` | Multi-Agenten-Erkennung aus `AgentName(Role)`-Mustern |
+| Agent | Format | Notes |
+|-------|--------|-------|
+| OpenHands | JSON (`history` array) | Costs from `metrics.accumulated_cost` |
+| SWE-Agent | `.traj` (JSON) + `.config.yaml` | Task from `problem_statement.text` |
+| Live-SWE-Agent | `.traj` + `.config.yaml` | Similar to SWE-Agent |
+| MetaGPT | `.txt` / `.log` | Multi-agent detection from `AgentName(Role)` patterns |
 
 ---
 
-## LLM-Judge Konfiguration
+## LLM-Judge Configuration
 
 ```python
 BASE_URL_JUDGE = "https://api.helmholtz-blablador.fz-juelich.de/v1"

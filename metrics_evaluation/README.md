@@ -1,53 +1,53 @@
 # Metrics Evaluation
 
-Evaluierungs-Pipeline für autonome Coding-Agenten (Masterarbeit).
-Bewertet Agenten-Trajektorien mit deterministischen Metriken und LLM-as-a-Judge.
+Evaluation pipeline for autonomous coding agents (Master's thesis).
+Evaluates agent trajectories using deterministic metrics and LLM-as-a-Judge.
 
 ---
 
-## Verzeichnisstruktur
+## Directory Structure
 
 ```
 metrics_evaluation/
-├── metrics_evaluation.py         # Haupt-Evaluationsskript (einzelne Trajektorie)
-├── batch_evaluation.py           # Stapelverarbeitung aller Issues
-├── consolidate_results.py        # Fasst eval_*.json zu consolidated_results.csv zusammen
-├── evaluation_data_models.py     # Datenklassen: StandardStep, EvaluationTrace
-├── evaluation_prompts.py         # LLM-Judge Prompts (aktuelle Version)
-├── evaluation_prompts_v1.py      # Backup: ursprüngliche Prompts
-├── evaluation_prompts_v2.py      # Alternative Prompts-Version
-├── review_trace.py               # Hilfsskript zur Anzeige von Trajektorien
+├── metrics_evaluation.py         # Main evaluation script (single trajectory)
+├── batch_evaluation.py           # Batch processing of all issues
+├── consolidate_results.py        # Consolidates eval_*.json into consolidated_results.csv
+├── evaluation_data_models.py     # Data classes: StandardStep, EvaluationTrace
+├── evaluation_prompts.py         # LLM-Judge prompts (current version)
+├── evaluation_prompts_v1.py      # Backup: original prompts
+├── evaluation_prompts_v2.py      # Alternative prompts version
+├── review_trace.py               # Helper script for displaying trajectories
 │
 ├── agent_parsers/
-│   ├── openhands_parser.py       # Parser für OpenHands JSON-Logs
-│   ├── sweagent_parser.py        # Parser für SWE-Agent .traj-Dateien
-│   ├── metagpt_parser.py         # Parser für MetaGPT .txt/.log-Dateien
-│   └── live_sweagent_parser.py   # Parser für Live-SWE-Agent
+│   ├── openhands_parser.py       # Parser for OpenHands JSON logs
+│   ├── sweagent_parser.py        # Parser for SWE-Agent .traj files
+│   ├── metagpt_parser.py         # Parser for MetaGPT .txt/.log files
+│   └── live_sweagent_parser.py   # Parser for Live-SWE-Agent
 │
-├── descriptive_analysis.py       # Deskriptive Analyse + Plots (RQ1, RQ3)
-├── annotation_analysis.py        # Visualisierung manueller Annotationen (RQ2)
-├── spearman_correlation.py       # Spearman-Korrelation Auto vs. Mensch (RQ2)
-├── kappa_sample_rate_comparison.py  # Weighted Kappa: SR-Stabilität + Cross-Model (RQ4, RQ5)
-├── auc_predictor_analysis.py     # AUC-Prädiktor-Analyse (RQ4.3)
-├── plot_spearman_sr_rq4.py       # Spearman SR=1 vs. SR=5 Vergleich (RQ4.2)
+├── descriptive_analysis.py       # Descriptive analysis + plots (RQ1, RQ3)
+├── annotation_analysis.py        # Visualization of manual annotations (RQ2)
+├── spearman_correlation.py       # Spearman correlation auto vs. human (RQ2)
+├── kappa_sample_rate_comparison.py  # Weighted Kappa: SR stability + Cross-Model (RQ4, RQ5)
+├── auc_predictor_analysis.py     # AUC predictor analysis (RQ4.3)
+├── plot_spearman_sr_rq4.py       # Spearman SR=1 vs. SR=5 comparison (RQ4.2)
 │
-├── manual_annotations.csv        # Manuelle Expertenbewertungen
-├── Labeling_Guide.md             # Bewertungskriterien für alle Metriken
+├── manual_annotations.csv        # Manual expert ratings
+├── Labeling_Guide.md             # Scoring criteria for all metrics
 │
 └── evaluation_results/
-    ├── eval_*.json               # Einzelergebnisse je Agent + Issue
-    ├── 1_step_gptoss120b/        # GPT-OSS-120b, SR=1 (Standard)
+    ├── eval_*.json               # Individual results per agent + issue
+    ├── 1_step_gptoss120b/        # GPT-OSS-120b, SR=1 (standard)
     ├── 1_step_qwen3_235b/        # Qwen3-235b, SR=1
     ├── 1_step_gpt4omini_8b/      # GPT-4o-mini-8b, SR=1
-    ├── default_gptoss120b/       # GPT-OSS-120b, SR=5 (Reduziert)
+    ├── default_gptoss120b/       # GPT-OSS-120b, SR=5 (reduced)
     ├── default_qwen3_235b/       # Qwen3-235b, SR=5
     └── default_gpt4omini_8b/     # GPT-4o-mini-8b, SR=5
 ```
 
-Jedes `evaluation_results/<run>/`-Verzeichnis enthält:
-- `consolidated_results.csv` — aggregierte Scores aller Agenten und Issues
-- `spearman_correlation_results.csv` — Spearman-ρ je Metrik vs. Gold Standard
-- Abbildungen als `.png`, `.pdf`, `.pgf` und `.tex`
+Each `evaluation_results/<run>/` directory contains:
+- `consolidated_results.csv` — aggregated scores for all agents and issues
+- `spearman_correlation_results.csv` — Spearman ρ per metric vs. gold standard
+- Figures as `.png`, `.pdf`, `.pgf` and `.tex`
 
 ---
 
@@ -60,19 +60,19 @@ source venv/bin/activate
 pip install pandas scipy scikit-learn matplotlib sentence-transformers
 ```
 
-API-Schlüssel als Umgebungsvariable setzen:
+Set API key as environment variable:
 
 ```bash
 export HELMHOLTZ_API_KEY=<key>
-# oder
+# or
 export OPENAI_API_KEY=<key>
 ```
 
 ---
 
-## Evaluation ausführen
+## Running the Evaluation
 
-### Einzelne Trajektorie
+### Single Trajectory
 
 ```bash
 python3 metrics_evaluation.py <trajectory_file> --agent OpenHands
@@ -80,7 +80,7 @@ python3 metrics_evaluation.py <file.traj> --agent SWE-Agent
 python3 metrics_evaluation.py <file.txt> --agent MetaGPT --mas --global-plan
 ```
 
-### Stapelverarbeitung (alle Issues)
+### Batch Processing (all issues)
 
 ```bash
 # OpenHands
@@ -95,19 +95,19 @@ python3 batch_evaluation.py --agent MetaGPT --logs-dir ../logs/metagpt --mas --g
 # live-swe-agent
 python3 batch_evaluation.py --agent live-swe-agent --logs-dir ../logs/live-swe-agent
 
-# Mit angepasster Sampling-Rate
+# With custom sampling rate
 python3 batch_evaluation.py --agent SWE-Agent --logs-dir ../logs/swe-agent --sample-rate 1
 ```
 
-### Ergebnisse konsolidieren
+### Consolidate Results
 
 ```bash
 python3 consolidate_results.py
 ```
 
-Liest alle `eval_*.json` im aktuellen Verzeichnis und schreibt `consolidated_results.csv`.
+Reads all `eval_*.json` in the current directory and writes `consolidated_results.csv`.
 
-### Trajektorie anzeigen
+### Display Trajectory
 
 ```bash
 python3 review_trace.py --agent OpenHands --task scikit-learn__scikit-learn-12585
@@ -115,43 +115,43 @@ python3 review_trace.py --agent OpenHands --task scikit-learn__scikit-learn-1258
 
 ---
 
-## Analyse und Validierung
+## Analysis and Validation
 
-### Deskriptive Analyse (RQ1, RQ3)
+### Descriptive Analysis (RQ1, RQ3)
 
 ```bash
 source venv/bin/activate
 python3 descriptive_analysis.py
 ```
 
-### Manuelle Annotationen visualisieren (RQ2)
+### Visualize Manual Annotations (RQ2)
 
 ```bash
 python3 annotation_analysis.py
 ```
 
-### Spearman-Korrelation Auto vs. Mensch (RQ2)
+### Spearman Correlation Auto vs. Human (RQ2)
 
 ```bash
 python3 spearman_correlation.py
 ```
 
-Liest `evaluation_results/consolidated_results.csv` und `manual_annotations.csv`.
-Schreibt `spearman_correlation_results.csv` in das aktuelle Ergebnisverzeichnis.
+Reads `evaluation_results/consolidated_results.csv` and `manual_annotations.csv`.
+Writes `spearman_correlation_results.csv` to the current results directory.
 
-### Weighted Kappa: SR-Stabilität + Cross-Model (RQ4.2, RQ5)
+### Weighted Kappa: SR Stability + Cross-Model (RQ4.2, RQ5)
 
 ```bash
 python3 kappa_sample_rate_comparison.py
 ```
 
-### AUC-Prädiktor-Analyse (RQ4.3)
+### AUC Predictor Analysis (RQ4.3)
 
 ```bash
 python3 auc_predictor_analysis.py
 ```
 
-Liest aus `evaluation_results/1_step_gptoss120b/consolidated_results.csv`.
+Reads from `evaluation_results/1_step_gptoss120b/consolidated_results.csv`.
 
 ### Spearman SR=1 vs. SR=5 (RQ4.2)
 
@@ -162,16 +162,16 @@ python3 plot_spearman_sr_rq4.py
 
 ---
 
-## Abbildungen
+## Figures
 
-Alle Skripte speichern Abbildungen als `.png`, `.pdf`, `.pgf` und `.tex`.
-Die `.tex`-Datei enthält `\includegraphics[width=\linewidth]{name.pdf}` und kann
-in LaTeX direkt per `\input{name.tex}` eingebunden werden.
+All scripts save figures as `.png`, `.pdf`, `.pgf` and `.tex`.
+The `.tex` file contains `\includegraphics[width=\linewidth]{name.pdf}` and can be
+included in LaTeX directly via `\input{name.tex}`.
 
-### Abbildungen je Skript
+### Figures per Script
 
-| Skript | Erzeugte Abbildungen |
-|--------|----------------------|
+| Script | Generated Figures |
+|--------|-------------------|
 | `descriptive_analysis.py` | `cost_benefit_scatter`, `radar_chart_agents`, `boxplots_per_metric`, `boxplots_per_metric_4x2`, `agent_comparison_heatmap`, `mas_metrics_detail`, `mas_metrics_detail_2x2`, `success_vs_failure_comparison`, `metric_correlation_matrix` |
 | `spearman_correlation.py` | `correlation_scatterplots`, `correlation_barchart` |
 | `annotation_analysis.py` | `annotation_distribution`, `annotation_distribution_by_agent`, `annotation_heatmap_by_agent`, `annotation_spread_heatmap`, `interrater_agreement` |
@@ -181,9 +181,9 @@ in LaTeX direkt per `\input{name.tex}` eingebunden werden.
 
 ---
 
-## TikZ-Abbildungen (Kapitel 2–4)
+## TikZ Figures (Chapters 2–4)
 
-Die konzeptuellen Abbildungen der Arbeit liegen als TikZ-Quellcode in `../figures/`.
+The conceptual figures of the thesis are available as TikZ source code in `../figures/`.
 
 ```bash
 cd ../figures
@@ -197,31 +197,31 @@ cd ../figures
 ./build_figure.sh fig_prompt_anatomy
 ```
 
-`build_figure.sh` erzeugt je Abbildung eine `.png` (300 dpi) und eine `.pgf`-Datei.
+`build_figure.sh` generates a `.png` (300 dpi) and a `.pgf` file per figure.
 
-| Datei | Inhalt |
-|-------|--------|
-| `fig_blackbox_vs_glassbox` | Black-Box vs. Glass-Box Vergleich, symmetrisches Layout mit Trennlinie mittig |
-| `fig_agent_architecture` | LLM-Agenten-Architektur, 4 Spalten (Wang 2024) |
-| `fig_agent_evaluation` | Evaluationsdimensionen (Siegmund 2025), 7 Fragen mit geraden Pfeilen |
-| `fig_eval_pipeline` | 3-Spalten-Pipeline (Ausführung → Transformation → Analyse), waagerechte Pfeile mit `\|-`-Trick |
-| `fig_stratified_sample` | Pyramide Easy/Medium/Hard, Hard-Label innen, N=15 Aufgaben |
-| `fig_pipeline_flow` | Flowchart mit 6 Schritten und TikZ-Icons |
-| `fig_prompt_anatomy` | Sandwich-Blockdiagramm System-Prompt, alle Boxen gleich hell, Text bündig ausgerichtet |
+| File | Content |
+|------|---------|
+| `fig_blackbox_vs_glassbox` | Black-Box vs. Glass-Box comparison, symmetric layout with divider in the center |
+| `fig_agent_architecture` | LLM agent architecture, 4 columns (Wang 2024) |
+| `fig_agent_evaluation` | Evaluation dimensions (Siegmund 2025), 7 questions with straight arrows |
+| `fig_eval_pipeline` | 3-column pipeline (Execution → Transformation → Analysis), horizontal arrows with `\|-` trick |
+| `fig_stratified_sample` | Pyramid Easy/Medium/Hard, Hard label inside, N=15 tasks |
+| `fig_pipeline_flow` | Flowchart with 6 steps and TikZ icons |
+| `fig_prompt_anatomy` | Sandwich block diagram system prompt, all boxes equally shaded, text aligned |
 
 ---
 
-## CLI-Argumente (batch_evaluation.py)
+## CLI Arguments (batch_evaluation.py)
 
-| Argument | Standard | Beschreibung |
-|----------|----------|--------------|
-| `--agent` | Pflicht | `OpenHands`, `SWE-Agent`, `MetaGPT`, `live-swe-agent` |
-| `--logs-dir` | Pflicht | Verzeichnis mit Trajektorie-Dateien |
-| `--mas` | `false` | Multi-Agenten-Modus aktivieren |
-| `--global-plan` | `false` | Metrik M2.3 aktivieren (nur sinnvoll für MetaGPT) |
-| `--sample-rate` | `5` | Sampling-Rate für M3.1 und M3.2 |
-| `--context-window-steps` | `8` | Fenstergröße für M4.1 |
-| `--context-sample-rate` | `4` | Sampling-Rate für M4.1 |
-| `--start-from` | `1` | Ab Issue N starten |
-| `--only-issue` | – | Nur ein bestimmtes Issue auswerten |
-| `--prompts-file` | – | Pfad zu alternativer Prompts-Datei |
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--agent` | required | `OpenHands`, `SWE-Agent`, `MetaGPT`, `live-swe-agent` |
+| `--logs-dir` | required | Directory containing trajectory files |
+| `--mas` | `false` | Enable multi-agent system mode |
+| `--global-plan` | `false` | Enable metric M2.3 (only useful for MetaGPT) |
+| `--sample-rate` | `5` | Sampling rate for M3.1 and M3.2 |
+| `--context-window-steps` | `8` | Window size for M4.1 |
+| `--context-sample-rate` | `4` | Sampling rate for M4.1 |
+| `--start-from` | `1` | Start from issue N |
+| `--only-issue` | – | Evaluate only one specific issue |
+| `--prompts-file` | – | Path to alternative prompts file |
