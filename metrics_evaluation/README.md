@@ -225,3 +225,9 @@ cd ../figures
 | `--start-from` | `1` | Start from issue N |
 | `--only-issue` | – | Evaluate only one specific issue |
 | `--prompts-file` | – | Path to alternative prompts file |
+
+---
+
+## Data storage and quality assurance
+
+The results of the manual annotation were recorded in a structured CSV file (manual_annotations.csv). In addition to the numerical rating, each record includes brief qualitative notes on noticeable behavioral patterns or errors identified during the review of the traces. These notes serve as the basis for the detailed case study analysis in the results chapter (Chapter 5).
