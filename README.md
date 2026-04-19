@@ -13,15 +13,6 @@ Detaillierte Dokumentation der Analyse-Skripte und Abbildungen:
 
 ```
 mas-evaluation/
-├── agent_systems/               # Quellcode der Agentensysteme (Referenz-Implementierungen)
-│   ├── openhands/
-│   ├── SWE-agent/
-│   ├── live-swe-agent/
-│   ├── metagpt/
-│   ├── SWE-bench/
-│   ├── mini-swe-agent/
-│   └── chatdev/
-│
 ├── logs/                        # Rohe Agenten-Trajektorien (Log-Dateien)
 │   ├── openhands/
 │   ├── swe-agent/
@@ -33,8 +24,6 @@ mas-evaluation/
 │   ├── swe-agent/
 │   ├── live-swe-agent/
 │   └── metagpt/
-│
-├── swe_bench_verified_issues/   # Die 15 ausgewählten SWE-bench Verified Issues
 │
 ├── metrics_evaluation/          # Evaluierungs-Pipeline (Hauptmodul)
 │   ├── metrics_evaluation.py    # Haupt-Evaluationsskript
@@ -48,6 +37,7 @@ mas-evaluation/
 │   ├── auc_predictor_analysis.py        # AUC-Prädiktor-Analyse (RQ4.3)
 │   ├── plot_spearman_sr_rq4.py          # Spearman SR=1 vs. SR=5 (RQ4.2)
 │   ├── manual_annotations.csv   # Manuelle Expertenbewertungen (Rater 1)
+│   ├── evaluation_split_final.txt       # Die 15 ausgewählten SWE-bench Verified Issues
 │   ├── evaluation_results/      # Ergebnisse, CSVs und Abbildungen
 │   │   ├── 1_step_gptoss120b/   # GPT-OSS-120b, SR=1 (Standard-Konfiguration)
 │   │   ├── 1_step_qwen3_235b/   # Qwen3-235b, SR=1
@@ -57,15 +47,7 @@ mas-evaluation/
 │   │   └── default_gpt4omini_8b/# GPT-4o-mini-8b, SR=5
 │   └── README.md                # Detaillierte Dokumentation
 │
-└── figures/                     # TikZ-Abbildungen (Kapitel 2–4)
-    ├── build_figure.sh          # Build-Skript → erzeugt PNG + PGF
-    ├── fig_blackbox_vs_glassbox.tex
-    ├── fig_agent_architecture.tex
-    ├── fig_agent_evaluation.tex
-    ├── fig_eval_pipeline.tex
-    ├── fig_stratified_sample.tex
-    ├── fig_pipeline_flow.tex
-    └── fig_prompt_anatomy.tex
+└──
 ```
 
 ---
@@ -190,4 +172,18 @@ BASE_URL_JUDGE = "https://api.helmholtz-blablador.fz-juelich.de/v1"
 MODEL_JUDGE    = "1 - GPT-OSS-120b - an open model released by OpenAI in August 2025"
 MODEL_EMBEDDING = "text-embedding-3-small"
 CONTEXT_WINDOW_SIZE = 131000
+```
+
+```python
+BASE_URL_JUDGE = "https://api.helmholtz-blablador.fz-juelich.de/v1"
+MODEL_JUDGE    = "2 - Qwen3 235, a great model from Alibaba with a long context size"
+MODEL_EMBEDDING = "text-embedding-3-small"
+CONTEXT_WINDOW_SIZE = 204000
+```
+
+```python
+BASE_URL_JUDGE = "http://91.99.56.205:4000/v1"
+MODEL_JUDGE    = "gpt-4o-mini"
+MODEL_EMBEDDING = "text-embedding-3-small"
+CONTEXT_WINDOW_SIZE = 128000
 ```

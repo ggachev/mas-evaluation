@@ -31,8 +31,7 @@ metrics_evaluation/
 ├── auc_predictor_analysis.py     # AUC-Prädiktor-Analyse (RQ4.3)
 ├── plot_spearman_sr_rq4.py       # Spearman SR=1 vs. SR=5 Vergleich (RQ4.2)
 │
-├── manual_annotations.csv        # Manuelle Expertenbewertungen (Rater 1)
-├── manual_annotations_2.csv      # Manuelle Expertenbewertungen (Rater 2)
+├── manual_annotations.csv        # Manuelle Expertenbewertungen
 ├── Labeling_Guide.md             # Bewertungskriterien für alle Metriken
 │
 └── evaluation_results/
